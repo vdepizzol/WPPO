@@ -1,0 +1,59 @@
+WPPO plugin TODO
+================
+
+- Separate POT files from pages and from news
+
+    According to the discussion in i18n-coordination-list, it was agreed to use
+    separated files for translations from pages and from news.
+    
+    (Maybe in the plugin admin area could have some option regarding this)
+    
+
+- Integrate with Damned Lies
+
+    WPPO translation plugin doesn't work alone. Damned lies must be configured
+    to download POT files via HTTP.
+
+- Create an admin page with update actions
+
+    We must offer an option in the admin with a call to the function that parses
+    the new PO files.
+
+- Search mechanism in WordPress doesn't search for translated pages
+
+    We must tweak search engine in WordPress to search translated content when
+    viewing the website in another language.
+    
+    Right now the translated content is viewed in the search results, but the 
+    query can only be in english.
+    
+- Fix XML2PO xhtml mode
+
+    Currently xhtml mode[1] from xml2po don't care about ignoring "src" and "href"
+    params to the translator. We need to fix this if we don't want translators
+    to change URLs.
+    
+    [1] http://git.gnome.org/browse/gnome-doc-utils/tree/xml2po/xml2po/modes/xhtml.py
+    
+    
+- Store all the available languages
+
+    Currently WPPO stores the translated content, but there is no fast way to 
+    discover what are the available languages, and how much is the PO file 
+    of each language translated.
+    
+    WPPO should have an admin area with these stats.
+
+
+- Pages don't have absolute address
+
+    @MINOR
+
+    This is not a major issue for the user, but it is for search robots[2].
+    Each page should have an absolute path, like http://gnome.org/es/acerca/
+    instead of http://gnome.org/about/?lang=es
+    
+    Also, we should update translated content to point the links to translated
+    pages.
+    
+    [2] http://googlewebmastercentral.blogspot.com/2010/03/working-with-multilingual-websites.html
