@@ -39,7 +39,7 @@ if(!function_exists('_log')) {
 require_once("wppo.genxml.php");
 
 /* 
- * Folder structure: (TODO)
+ * Folder structure:
  * /wppo/[post_type]/[file_type]/[lang].[ext]
  * 
  * Example:
@@ -52,61 +52,142 @@ require_once("wppo.genxml.php");
  * 
  */
 
-// FIXME
+define('WPPO_DIR', ABSPATH . "wppo/");
+define('WPPO_PREFIX', "wppo_");
+
+/*
 define('WPPO_DIR', ABSPATH . "wppo/");
 define('PO_DIR', WPPO_DIR . "po/");
 define('POT_DIR', WPPO_DIR . "pot/");
 define('POT_FILE', POT_DIR . "gnomesite.pot");
 define('XML_DIR', WPPO_DIR . "xml/");
+*/
 
 $wppo_cache = array();
 
-/*
- * Setting up where compiled po files are located and which translation
- * domain to use.
- */
-bindtextdomain('gnomesite', PO_DIR);
-bind_textdomain_codeset('gnomesite', 'UTF-8');
-textdomain('gnomesite');
+//bindtextdomain('gnomesite', PO_DIR);
+//bind_textdomain_codeset('gnomesite', 'UTF-8');
+//textdomain('gnomesite');
+// FIXME
 add_filter('get_pages', 'wppo_filter_get_pages', 1);
 
 
 /*
- * Creates wppo auxiliary table when plugin is installed to keep all the
- * translated xml in an easy accessible format.
+ * Install WPPO Plugin
  */
+
 function wppo_install() {
+    
     global $wpdb;
-
-    $table_name = $wpdb->prefix . "wppo";
-
-    if($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
-
-        $sql = "CREATE TABLE IF NOT EXISTS `$table_name` (
-                 `wppo_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-                 `post_id` bigint(20) unsigned NOT NULL,
-                 `lang` varchar(10) NOT NULL,
-                 `translated_title` text NOT NULL,
-                 `translated_excerpt` text NOT NULL,
-                 `translated_name` varchar(200) NOT NULL,
-                 `translated_content` longtext NOT NULL,
-                 PRIMARY KEY (`wppo_id`),
-                 KEY `post_id` (`post_id`)
-               ) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;";
-
-        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-        dbDelta($sql);
+    
+    $tables = array(
+        'posts' =>      "CREATE TABLE `".WPPO_PREFIX."posts` (
+                          `wppo_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+                          `post_id` bigint(20) unsigned NOT NULL,
+                          `lang` varchar(10) NOT NULL,
+                          `translated_title` text NOT NULL,
+                          `translated_excerpt` text NOT NULL,
+                          `translated_name` varchar(200) NOT NULL,
+                          `translated_content` longtext NOT NULL,
+                          PRIMARY KEY (`wppo_id`),
+                          KEY `post_id` (`post_id`)
+                        ) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;",
+        
+        
+        'languages' =>  "CREATE TABLE `".WPPO_PREFIX."languages` (
+                          `lang_code` varchar(10) NOT NULL,
+                          `lang_name` varchar(100) NOT NULL,
+                          `lang_status` enum('visible', 'hidden') NOT NULL,
+                          PRIMARY KEY ( `lang_code` )
+                        ) ENGINE = MYISAM DEFAULT CHARSET=latin1 ;",
+        
+        
+        //'language_status' => 
+    );
+    
+    foreach($tables as $name => $sql) {
+        if($wpdb->get_var("SHOW TABLES LIKE '".WPPO_PREFIX."{$name}'") != WPPO_PREFIX.$name) {
+            require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+            dbDelta($sql);
+        }
     }
-
+    
+    
+    /*
+     * Create WPPO directories
+     */
+    $directories_for_post_types = array('pages', 'posts');
+    $directories_for_formats = array('po', 'pot', 'xml');
+    
     if(!is_dir(WPPO_DIR)) {
+        
+        if(!is_writable(ABSPATH)) {
+            die("Please, make ".ABSPATH." a writeable directory or create manually a folder called “wppo” with chmod 0755 on it.");
+        }
+        
         mkdir(WPPO_DIR, 0755);
-        mkdir(PO_DIR, 0755);
-        mkdir(POT_DIR, 0755);
-        mkdir(XML_DIR, 0755);
-    }  
-    wppo_update_pot_file();
+    }
+    
+    if(!is_writable(WPPO_DIR)) {
+        die("The directory ".WPPO_DIR." must be writeable.");
+    }
+    
+    foreach($directories_for_post_types as $directory) {
+        if(!is_dir(WPPO_DIR.'/'.$directory)) {
+            mkdir(WPPO_DIR.'/'.$directory, 0755);
+        } else {
+            if(!is_writable(WPPO_DIR."/".$directory)) {
+                die("All the folders inside ".WPPO_DIR." should be writeable.");
+            }
+        }
+        
+        foreach($directories_for_formats as $format) {
+            if(!is_dir(WPPO_DIR.'/'.$directory.'/'.$format)) {
+                mkdir(WPPO_DIR.'/'.$directory.'/'.$format, 0755);
+            } else {
+                if(!is_writable(WPPO_DIR."/".$directory."/".$format)) {
+                    die("All the folders inside ".WPPO_DIR." should be writeable.");
+                }
+            }
+        }
+    }
+    
+    /*
+     * Check for existing translations
+     */
+    // FIXME
+    //wppo_update_pot_file();
+    
 }
 register_activation_hook(__FILE__, 'wppo_install');
+
+
+function wppo_uninstall() {
+    
+    global $wpdb;
+    
+    /*
+     * Drop existing tables
+     */
+    
+    $tables = array('posts', 'languages', 'language_status');
+    
+    foreach($tables as $index => $name) {
+        $tables[$index] = WPPO_PREFIX.$name;
+    }
+    
+    $wpdb->query("DROP TABLE IF EXISTS ".implode(", ", $tables));
+    
+    
+    /*
+     * We won't delete any wppo files here.
+     */
+    
+}
+register_deactivation_hook(__FILE__, 'wppo_uninstall');
+
+
+
 
 
 add_filter('the_title', function($title, $id) {
@@ -124,8 +205,8 @@ add_filter('the_title', function($title, $id) {
 add_filter('the_content', function($content) {
     global $wppo_cache, $post;
 
-    if(isset($wppo_cache[$post->ID])) {
-        $translated_content = $wppo_cache[$post->ID]['translated_content'];
+    if(isset($wppo_cache['posts'][$post->ID])) {
+        $translated_content = $wppo_cache['posts'][$post->ID]['translated_content'];
     } else {
         $translated_content = trim(wppo_get_translated_data('translated_content', $post->ID));
     }
@@ -143,23 +224,17 @@ function wppo_filter_get_pages($pages) {
     global $wppo_cache, $wpdb;
 
     $lang = wppo_get_lang();
-    if(strpos($lang, '_') !== false) {
-        $fallback_lang = explode('_', $lang);
-        $fallback_lang = $fallback_lang[0];
-    } else {
-        $fallback_lang = $lang;
-    }
 
     foreach($pages as $page) {
-        if(!isset($wppo_cache[$page->ID])) {
-          $wppo_cache[$page->ID] = $wpdb->get_row("SELECT * FROM " . $wpdb->prefix . "wppo WHERE post_id = '" . $page->ID . "' AND (lang = '" . $lang . "' OR lang = '" . $fallback_lang . "')", ARRAY_A);
+        if(!isset($wppo_cache['posts'][$page->ID])) {
+          $wppo_cache['posts'][$page->ID] = $wpdb->get_row("SELECT * FROM " . WPPO_PREFIX . "posts WHERE post_id = '" . $page->ID . "' AND lang = '" . $lang . "'", ARRAY_A);
         }
         
-        if(is_array($wppo_cache[$page->ID])) {
-          $page->post_title   = $wppo_cache[$page->ID]['translated_title'];
-          $page->post_name    = $wppo_cache[$page->ID]['translated_name'];
-          $page->post_content = $wppo_cache[$page->ID]['translated_content'];
-          $page->post_excerpt = $wppo_cache[$page->ID]['translated_excerpt'];
+        if(is_array($wppo_cache['posts'][$page->ID])) {
+          $page->post_title   = $wppo_cache['posts'][$page->ID]['translated_title'];
+          $page->post_name    = $wppo_cache['posts'][$page->ID]['translated_name'];
+          $page->post_content = $wppo_cache['posts'][$page->ID]['translated_content'];
+          $page->post_excerpt = $wppo_cache['posts'][$page->ID]['translated_excerpt'];
         }
     }
     
@@ -173,9 +248,14 @@ function wppo_filter_get_pages($pages) {
  * strings of the gnome.org website.
  */
 function wppo_update_pot_file($post) {
-    $xml_file = XML_DIR . "gnomesite.xml";
+    
+    $pot_file = WPPO_DIR . "master.pot";
+    $xml_file = WPPO_DIR . "master.xml";
+    
     file_put_contents($xml_file, wppo_generate_po_xml());
-    exec("/usr/bin/xml2po -m xhtml -o " . POT_FILE . " $xml_file");
+    
+    $output = shell_exec("/usr/bin/xml2po -m xhtml -o " . escapeshellarg($pot_file) . " " . escapeshellarg($xml_file) );
+    
 }
 add_action('post_updated', 'wppo_update_pot_file');
 add_action('post_updated', 'wppo_receive_po_file');
@@ -187,10 +267,19 @@ add_action('post_updated', 'wppo_receive_po_file');
  * xml file and separate its content to the wordpress database
  */
 function wppo_receive_po_file() {
-  global $wpdb;
-      
-  $table_format = array('%s', '%d', '%s', '%s', '%s');
-  
+    global $wpdb;
+    
+    /*
+     * WordPress pattern for validating data
+     */
+    $table_format = array('%s', '%d', '%s', '%s', '%s');
+    
+    // FIXME
+    $post_type = 'posts';
+    
+    $po_dir = WPPO_DIR."/".$post_type;
+    
+    
     if($handle = opendir(PO_DIR)) {
         while(false !== ($po_file = readdir($handle))) {
             /*
@@ -243,11 +332,11 @@ function wppo_receive_po_file() {
                     /*
                      * Stores in the table the translated version of the page
                      */
-                    $wpdb->get_row("SELECT wppo_id FROM " . $wpdb->prefix . "wppo WHERE post_id = '" . $page_id . "' AND lang = '" . $lang . "'");
+                    $wpdb->get_row("SELECT wppo_id FROM ".WPPO_PREFIX."posts WHERE post_id = '".$page_id."' AND lang = '".$lang."'");
                     if($wpdb->num_rows == 0) {
-                        $wpdb->insert($wpdb->prefix . "wppo", $page_array, $table_format);
+                        $wpdb->insert(WPPO_PREFIX."posts", $page_array, $table_format);
                     } else {
-                        $wpdb->update($wpdb->prefix . "wppo", $page_array, array('post_id' => $page_id, 'lang' => $lang), $table_format);
+                        $wpdb->update(WPPO_PREFIX."posts", $page_array, array('post_id' => $page_id, 'lang' => $lang), $table_format);
                     }
                 }
             }
@@ -270,11 +359,7 @@ function wppo_get_lang() {
             $user_lang[$k] = str_replace('-', '_', $user_lang[$k][0]);
         }
 
-        /*
-         * FIXME
-         * Before this, we need to check if the user language exists,
-         * and if not, try the following languages.
-         */
+        
         $lang = $user_lang[0];
     }
     
@@ -295,22 +380,15 @@ function wppo_get_translated_data($string, $id = null) {
     } else {
         $p = $post;
     }
-
-    if(strpos($lang, '_') !== false) {
-        $fallback_lang = explode('_', $lang);
-        $fallback_lang = $fallback_lang[0];
-    } else {
-        $fallback_lang = $lang;
+    
+    
+    if(!isset($wppo_cache['posts'][$p->ID])) {
+        $wppo_cache['posts'][$p->ID] = $wpdb->get_row("SELECT * FROM " . WPPO_PREFIX . "posts WHERE post_id = '" . $p->ID . "' AND lang = '" . $lang . "'", ARRAY_A);
     }
-
-
-
-    if(!isset($wppo_cache[$p->ID])) {
-        $wppo_cache[$p->ID] = $wpdb->get_row("SELECT * FROM " . $wpdb->prefix . "wppo WHERE post_id = '" . $p->ID . "' AND (lang = '" . $lang . "' OR lang = '" . $fallback_lang . "')", ARRAY_A);
-    }
-
-    if(isset($wppo_cache[$p->ID][$string]) && $fallback_lang != "en") {
-        return $wppo_cache[$p->ID][$string];
+    
+    
+    if(isset($wppo_cache['posts'][$p->ID][$string]) && $lang != "en") {
+        return $wppo_cache['posts'][$p->ID][$string];
     } else {
         if($string == 'translated_content') {
             return wpautop($p->post_content);
