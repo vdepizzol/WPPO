@@ -55,21 +55,9 @@ require_once("wppo.genxml.php");
 define('WPPO_DIR', ABSPATH . "wppo/");
 define('WPPO_PREFIX', "wppo_");
 
-/*
-define('WPPO_DIR', ABSPATH . "wppo/");
-define('PO_DIR', WPPO_DIR . "po/");
-define('POT_DIR', WPPO_DIR . "pot/");
-define('POT_FILE', POT_DIR . "gnomesite.pot");
-define('XML_DIR', WPPO_DIR . "xml/");
-*/
+
 
 $wppo_cache = array();
-
-//bindtextdomain('gnomesite', PO_DIR);
-//bind_textdomain_codeset('gnomesite', 'UTF-8');
-//textdomain('gnomesite');
-// FIXME
-add_filter('get_pages', 'wppo_filter_get_pages', 1);
 
 
 /*
@@ -241,6 +229,8 @@ function wppo_filter_get_pages($pages) {
     //_log($pages);
     return $pages;
 }
+add_filter('get_pages', 'wppo_filter_get_pages', 1);
+
 
 /*
  * This action will be fired when a post/page is updated. It's used to
@@ -348,22 +338,61 @@ function wppo_receive_po_file() {
 
 function wppo_get_lang() {
     
-    if(isset($_REQUEST['lang'])) {
-        $lang = $_REQUEST['lang'];
+    global $wpdb, $wppo_cache;
+    
+    if(isset($wppo_cache['defined_lang'])) {
+        $defined_lang = $wppo_cache['defined_lang'];
+    } elseif(isset($_REQUEST['lang'])) {
+        $defined_lang = $_REQUEST['lang'];
     } elseif(isset($_SESSION['lang'])) {
-        $lang = $_SESSION['lang'];
+        $defined_lang = $_SESSION['lang'];
     } else {
-        $user_lang = explode(',', $_SERVER["HTTP_ACCEPT_LANGUAGE"]);
-        foreach($user_lang as $k => $value) {
-            $user_lang[$k] = explode(';', $value);
-            $user_lang[$k] = str_replace('-', '_', $user_lang[$k][0]);
-        }
-
         
-        $lang = $user_lang[0];
+        /*
+         * Since no one told us what language the user wants to see the content,
+         * we'll try to guess from the HTTP headers
+         */
+        
+        $http_langs = explode(',', $_SERVER["HTTP_ACCEPT_LANGUAGE"]);
+        
+        $user_lang = array();
+        foreach($http_langs as $i => $value) {
+            $user_lang[$i] = explode(';', $value);
+            $user_lang[$i] = str_replace('-', '_', $user_lang[$i][0]);
+            
+            /*
+             * If the first language available also contains the country code,
+             * we'll automatically add as a second option the same language without the country code
+             */
+            if($i == 0 && strpos($user_lang[$i], '_') !== false) {
+                $user_lang[$i+1] = explode('_', $user_lang[$i]);
+                $user_lang[$i+1] = $user_lang[$i+1][0];
+            }
+        }
+        
+        if(!isset($wppo_cache['languages'])) {
+            $all_languages = $wpdb->get_results("SELECT lang_code, lang_name FROM ".WPPO_PREFIX."languages WHERE lang_status = 'visible'", ARRAY_A);
+            
+            foreach($all_languages as $index => $array) {
+                $wppo_cache['languages'][$array['lang_code']] = $array['lang_name'];
+            }
+        }
+        
+        foreach($user_lang as $lang_code) {
+            if(isset($wppo_cache['languages'][$lang_code])) {
+                $defined_lang = $lang_code;
+                break;
+            }
+        }
+        
+        if(isset($defined_lang)) {
+            $wppo_cache['defined_lang'] = $defined_lang;
+        } else {
+            return false;
+        }
     }
     
-    return $lang;
+    return $defined_lang;
 }
 
 

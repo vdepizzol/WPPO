@@ -23,13 +23,11 @@ require_once (ABSPATH . "wp-config.php");
 function wppo_generate_po_xml () {
   global $wpdb;
 
-  $myrows = $wpdb->get_results ("
-    SELECT ID, post_content, post_title, post_excerpt, post_name
-    FROM wp_posts
-    WHERE post_type != 'revision' && post_type != 'nav_menu_item'
-  ");
+  $myrows = $wpdb->get_results ("SELECT ID, post_content, post_title, post_excerpt, post_name
+                                 FROM wp_posts
+                                 WHERE post_type != 'revision' && post_type != 'nav_menu_item'");
 
-  header ("Content-type: text/xml");
+
 
   $broken_dom_pages = array ();
 
