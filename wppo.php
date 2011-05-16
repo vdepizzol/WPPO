@@ -7,7 +7,7 @@ Author URI: http://vinicius.depizzol.com.br
 License: AGPLv3
 */
 
-/* Copyright 2010  Vinicius Depizzol <vdepizzol@gmail.com>
+/* Copyright 2011  Vinicius Depizzol <vdepizzol@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -58,6 +58,10 @@ define('WPPO_PREFIX', "wppo_");
 
 $wppo_cache = array();
 
+
+if(is_admin()) {
+    require_once dirname(__FILE__).'/admin.php';
+}
 
 /*
  * Install WPPO Plugin
@@ -205,15 +209,14 @@ add_filter('the_content', function($content) {
     }
 }, 10, 1);
 
-
-
-function wppo_filter_get_pages($pages) {
+add_filter('get_pages', function() {
+    
     global $wppo_cache, $wpdb;
 
     $lang = wppo_get_lang();
 
     foreach($pages as $page) {
-        if(!isset($wppo_cache['posts'][$page->ID]) && $lang != false) {
+        if(!isset($wppo_cache['posts'][$page->ID]) && $lang != 'C') {
           $wppo_cache['posts'][$page->ID] = $wpdb->get_row("SELECT * FROM " . WPPO_PREFIX . "posts WHERE post_id = '" . mysql_real_escape_string($page->ID) . "' AND lang = '" . mysql_real_escape_string($lang) . "'", ARRAY_A);
         }
         
@@ -225,65 +228,88 @@ function wppo_filter_get_pages($pages) {
         }
     }
     
-    return $pages;
-}
-add_filter('get_pages', 'wppo_filter_get_pages', 1);
+    return $pages;   
+     
+}, 1);
 
 
 function wppo_get_lang() {
     
     global $wpdb, $wppo_cache;
     
-    if(isset($wppo_cache['defined_lang'])) {
-        $defined_lang = $wppo_cache['defined_lang'];
+    if(isset($wppo_cache['lang'])) {
+        
+        return $wppo_cache['lang'];
+        
     } elseif(isset($_REQUEST['lang'])) {
+        
         $defined_lang = $_REQUEST['lang'];
+        
     } elseif(isset($_SESSION['lang'])) {
+        
         $defined_lang = $_SESSION['lang'];
-    } else {
+        
+    }
+    
+    if(isset($defined_lang)) {
         
         /*
-         * Since no one told us what language the user wants to see the content,
-         * we'll try to guess from the HTTP headers
+         * Verify if the selected language really exists
          */
         
-        $http_langs = explode(',', $_SERVER["HTTP_ACCEPT_LANGUAGE"]);
-        
-        $user_lang = array();
-        foreach($http_langs as $i => $value) {
-            $user_lang[$i] = explode(';', $value);
-            $user_lang[$i] = str_replace('-', '_', $user_lang[$i][0]);
-            
-            /*
-             * If the first language available also contains the country code,
-             * we'll automatically add as a second option the same language without the country code
-             */
-            if($i == 0 && strpos($user_lang[$i], '_') !== false) {
-                $user_lang[$i+1] = explode('_', $user_lang[$i]);
-                $user_lang[$i+1] = $user_lang[$i+1][0];
-            }
+        $check_lang = $wpdb->get_row("SELECT lang_code, lang_name FROM ".WPPO_PREFIX."languages WHERE lang_status = 'visible' AND lang_code = '".mysql_real_escape_string($defined_lang)."'", ARRAY_A);
+        if($wpdb->num_rows === 1) {
+            return $defined_lang;
         }
         
-        if(!isset($wppo_cache['languages'])) {
-            $all_languages = $wpdb->get_results("SELECT lang_code, lang_name FROM ".WPPO_PREFIX."languages WHERE lang_status = 'visible'", ARRAY_A);
-            
-            foreach($all_languages as $index => $array) {
-                $wppo_cache['languages'][$array['lang_code']] = $array['lang_name'];
-            }
-        }
+    }
+    
+    /*
+     * Since at this point no one told us what language the user wants to see the content,
+     * we'll try to guess from the HTTP headers
+     */
+    
+    $http_langs = explode(',', $_SERVER["HTTP_ACCEPT_LANGUAGE"]);
+    
+    $user_lang = array();
+    foreach($http_langs as $i => $value) {
+        $user_lang[$i] = explode(';', $value);
+        $user_lang[$i] = str_replace('-', '_', $user_lang[$i][0]);
         
-        foreach($user_lang as $lang_code) {
-            if(isset($wppo_cache['languages'][$lang_code])) {
-                $defined_lang = $lang_code;
-                break;
-            }
+        /*
+         * If the first language available also contains the country code,
+         * we'll automatically add as a second option the same language without the country code.
+         */
+        if($i == 0 && strpos($user_lang[$i], '_') !== false) {
+            $user_lang[$i+1] = explode('_', $user_lang[$i]);
+            $user_lang[$i+1] = $user_lang[$i+1][0];
         }
+    }
+    
+    if(!isset($wppo_cache['available_lang'])) {
+        $all_languages = $wpdb->get_results("SELECT lang_code, lang_name FROM ".WPPO_PREFIX."languages WHERE lang_status = 'visible'", ARRAY_A);
         
-        if(isset($defined_lang)) {
-            $wppo_cache['defined_lang'] = $defined_lang;
-        } else {
-            return false;
+        foreach($all_languages as $index => $array) {
+            $wppo_cache['available_lang'][$array['lang_code']] = $array['lang_name'];
         }
+    }
+    
+    foreach($user_lang as $lang_code) {
+        if(isset($wppo_cache['available_lang'][$lang_code])) {
+            $defined_lang = $lang_code;
+            break;
+        }
+    }
+    
+    if(isset($defined_lang)) {
+        $wppo_cache['lang'] = $defined_lang;
+    } else {
+        /*
+         * Returning this means that we won't show any translation to the user.
+         * "C" disables all localization.
+         */
+        $wppo_cache['lang'] = 'C';
+        return 'C';
     }
     
     return $defined_lang;
@@ -291,7 +317,7 @@ function wppo_get_lang() {
 
 
 /*
- * Get all the translated data from the current post
+ * Get all the translated data from the current post.
  */
 function wppo_get_translated_data($string, $id = null) {
     global $post, $wpdb, $wppo_cache;
@@ -304,20 +330,20 @@ function wppo_get_translated_data($string, $id = null) {
         $p = $post;
     }
     
+    if($lang != "C") {
+        if(!isset($wppo_cache['posts'][$p->ID])) {
+            $wppo_cache['posts'][$p->ID] = $wpdb->get_row("SELECT * FROM " . WPPO_PREFIX . "posts WHERE post_id = '" . mysql_real_escape_string($p->ID). "' AND lang = '" . mysql_real_escape_string($lang) . "'", ARRAY_A);
+        }
     
-    if(!isset($wppo_cache['posts'][$p->ID])) {
-        $wppo_cache['posts'][$p->ID] = $wpdb->get_row("SELECT * FROM " . WPPO_PREFIX . "posts WHERE post_id = '" . mysql_real_escape_string($p->ID). "' AND lang = '" . mysql_real_escape_string($lang) . "'", ARRAY_A);
+        if(isset($wppo_cache['posts'][$p->ID][$string])) {
+            return $wppo_cache['posts'][$p->ID][$string];
+        }
     }
     
-    
-    if(isset($wppo_cache['posts'][$p->ID][$string]) && $lang != "en") {
-        return $wppo_cache['posts'][$p->ID][$string];
+    if($string == 'translated_content') {
+        return wpautop($p->post_content);
     } else {
-        if($string == 'translated_content') {
-            return wpautop($p->post_content);
-        } else {
-            return $p->{str_replace("translated_", "post_", $string)};
-        }
+        return $p->{str_replace("translated_", "post_", $string)};
     }
 }
 
@@ -336,7 +362,9 @@ function wppo_update_pot_file($post) {
     $pot_file = WPPO_DIR . "master.pot";
     $xml_file = WPPO_DIR . "master.xml";
     
-    file_put_contents($xml_file, wppo_generate_po_xml());
+    if(is_writable()) {
+        file_put_contents($xml_file, wppo_generate_po_xml());
+    }
     
     $output = shell_exec("/usr/bin/xml2po -m xhtml -o " . escapeshellarg($pot_file) . " " . escapeshellarg($xml_file) );
     
