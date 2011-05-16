@@ -209,7 +209,7 @@ add_filter('the_content', function($content) {
     }
 }, 10, 1);
 
-add_filter('get_pages', function() {
+add_filter('get_pages', function($pages) {
     
     global $wppo_cache, $wpdb;
 
