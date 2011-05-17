@@ -99,9 +99,10 @@ function wppo_install() {
         
         
         'translation_log' =>    "CREATE TABLE `".WPPO_PREFIX."translation_log` (
-                                  `log_id` int(10) NOT NULL AUTO_INCREMENT PRIMARY KEY ,
-                                  `lang` varchar(10) NOT NULL ,
-                                  `translation_date` timestamp NOT NULL ,
+                                  `log_id` int(10) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                                  `lang` varchar(10) NOT NULL,
+                                  `post_type` varchar( 10 ) NOT NULL,
+                                  `translation_date` timestamp NOT NULL,
                                   `status` varchar(255) NOT NULL
                                 ) ENGINE=MYISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;"
     );

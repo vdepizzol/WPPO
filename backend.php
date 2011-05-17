@@ -76,8 +76,72 @@ function wppo_update_pot($coverage = array('posts', 'pages')) {
  * a po file. This function needs to take care of creating the translated
  * xml file and separate its content to the wordpress database
  */
-function wppo_receive_po_file() {
+function wppo_check_for_po_changes() {
     global $wpdb;
+    
+    $po_dates = array();
+    
+    if($post_type_handle = opendir(WPPO_DIR)) {
+        
+        // Walk trough post_type folders
+        while(false !== ($post_type_item = readdir($post_type_handle))) {
+            if(is_dir($post_type_item) && ($post_type_item == 'posts' || $post_type_item == 'pages')) {
+                
+                // Walk trough lang files inside po folder
+                if($lang_handle = opendir(WPPO_DIR.$post_type_item.'/po/')) {
+                    while(false !== ($lang_item = readdir($lang_handle))) {
+                        
+                        if(strpos($lang_item, '.po') !== false && strpos($lang_item, '.pot') === false) {
+                            
+                            $lang = explode(".", $lang_item);
+                            $lang = $lang[0];
+                            $po_dates[$post_type_item][$lang] = filemtime(WPPO_DIR.$post_type_item.'/po/'.$lang_item);
+                            
+                        }
+                        
+                    }
+                }
+            }
+        }
+    }
+    
+    $po_files_needing_update = array();
+    
+    foreach($po_dates as $post_type => $langs) {
+        foreach($langs as $lang => $last_modified) {
+            
+            // Check last modified here
+            // FIXME
+            $last_saved = 'X';
+            
+            if($last_modified != $last_saved) {
+                $po_files_needing_update[$post_type][] = $lang;
+            }
+        }
+    }
+    
+    foreach($po_files_needing_update as $post_type => $langs) {
+        foreach($langs as $lang) {
+            
+            $original_xml_file   = WPPO_DIR.$post_type.'.xml';
+            $po_file             = WPPO_DIR.$post_type.'/po/'.$lang.'.po'
+            $translated_xml_file = WPPO_DIR.$post_type.'/xml/'.$lang.'.xml';
+            
+            
+            $command = WPPO_XML2PO_COMMAND." -m xhtml -p ".escapeshellarg($po_file)." -o ".escapeshellarg($translated_xml_file)." ".escapeshellarg($original_xml_file);
+            $output = shell_exec($command);
+            
+            // read generated translated xml file
+            // FIXME
+            
+            // save translation log
+            // FIXME
+        }
+    }
+    
+    ////////////////////////////////////////////////////////
+    // old code of this function bellow
+    ////////////////////////////////////////////////////////
     
     /*
      * WordPress pattern for validating data
@@ -86,6 +150,8 @@ function wppo_receive_po_file() {
     
     // FIXME
     $post_type = 'posts';
+    
+    
     
     $po_dir = WPPO_DIR."/".$post_type;
     
