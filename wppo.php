@@ -51,10 +51,15 @@ require_once("wppo.genxml.php");
  * /wppo/posts.pot
  * /wppo/pages.pot
  * 
+ * Global XML file:
+ * /wppo/posts.xml
+ * /wppo/pages.xml
+ * 
  */
 
 define('WPPO_DIR', ABSPATH . "wppo/");
 define('WPPO_PREFIX', "wppo_");
+define('WPPO_XML2PO_COMMAND', "/usr/bin/xml2po");
 
 $wppo_cache = array();
 
@@ -72,28 +77,33 @@ function wppo_install() {
     global $wpdb;
     
     $tables = array(
-        'posts' =>      "CREATE TABLE `".WPPO_PREFIX."posts` (
-                          `wppo_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-                          `post_id` bigint(20) unsigned NOT NULL,
-                          `lang` varchar(10) NOT NULL,
-                          `translated_title` text NOT NULL,
-                          `translated_excerpt` text NOT NULL,
-                          `translated_name` varchar(200) NOT NULL,
-                          `translated_content` longtext NOT NULL,
-                          PRIMARY KEY (`wppo_id`),
-                          KEY `post_id` (`post_id`)
-                        ) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;",
+        'posts' =>              "CREATE TABLE `".WPPO_PREFIX."posts` (
+                                  `wppo_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+                                  `post_id` bigint(20) unsigned NOT NULL,
+                                  `lang` varchar(10) NOT NULL,
+                                  `translated_title` text NOT NULL,
+                                  `translated_excerpt` text NOT NULL,
+                                  `translated_name` varchar(200) NOT NULL,
+                                  `translated_content` longtext NOT NULL,
+                                  PRIMARY KEY (`wppo_id`),
+                                  KEY `post_id` (`post_id`)
+                                ) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;",
         
         
-        'languages' =>  "CREATE TABLE `".WPPO_PREFIX."languages` (
-                          `lang_code` varchar(10) NOT NULL,
-                          `lang_name` varchar(100) NOT NULL,
-                          `lang_status` enum('visible', 'hidden') NOT NULL,
-                          PRIMARY KEY ( `lang_code` )
-                        ) ENGINE = MYISAM DEFAULT CHARSET=latin1 ;",
+        'languages' =>          "CREATE TABLE `".WPPO_PREFIX."languages` (
+                                  `lang_code` varchar(10) NOT NULL,
+                                  `lang_name` varchar(100) NOT NULL,
+                                  `lang_status` enum('visible', 'hidden') NOT NULL,
+                                  PRIMARY KEY ( `lang_code` )
+                                ) ENGINE=MYISAM DEFAULT CHARSET=latin1 ;",
         
         
-        //'language_status' => 
+        'translation_log' =>    "CREATE TABLE `".WPPO_PREFIX."translation_log` (
+                                  `log_id` int(10) NOT NULL AUTO_INCREMENT PRIMARY KEY ,
+                                  `lang` varchar(10) NOT NULL ,
+                                  `translation_date` timestamp NOT NULL ,
+                                  `status` varchar(255) NOT NULL
+                                ) ENGINE=MYISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;"
     );
     
     foreach($tables as $name => $sql) {
@@ -144,6 +154,20 @@ function wppo_install() {
     }
     
     /*
+     * Add the default plugin options
+     */
+    
+    // Number of old POT files we'll keep in the pot_archive folder
+    // FIXME
+    add_option("wppo_pot-cache-number", 5);
+    
+    // Limit of date to select news to translate. Occasionally people
+    // want to disable the translation of old news.
+    // FIXME
+    add_option("wppo_old-news-limit", strtotime('now - 4 months'));
+    
+    
+    /*
      * Check for existing translations
      */
     // FIXME
@@ -161,7 +185,7 @@ function wppo_uninstall() {
      * Drop existing tables
      */
     
-    $tables = array('posts', 'languages', 'language_status');
+    $tables = array('posts', 'languages', 'translation_log');
     
     foreach($tables as $index => $name) {
         $tables[$index] = WPPO_PREFIX.$name;
@@ -349,24 +373,53 @@ function wppo_get_translated_data($string, $id = null) {
 
 
 
-/////////
-
 
 /*
- * This action will be fired when a post/page is updated. It's used to
- * update (regenerate, actually) the pot file with all translatable
- * strings of the gnome.org website.
+ * This function regenerates all the POT files, including all the recent
+ * changes in any content.
+ * Automatically it also updates the internal XML used for translation.
+ * 
+ * TODO:
+ * For reference it shouldn't delete the previous POT files
+ * 
  */
-function wppo_update_pot_file($post) {
+function wppo_update_pot($coverage = array('posts', 'pages')) {
     
-    $pot_file = WPPO_DIR . "master.pot";
-    $xml_file = WPPO_DIR . "master.xml";
+    global $wpdb;
     
-    if(is_writable()) {
-        file_put_contents($xml_file, wppo_generate_po_xml());
+    if($coverage == 'all') {
+        $coverage = array('posts', 'pages');
     }
     
-    $output = shell_exec("/usr/bin/xml2po -m xhtml -o " . escapeshellarg($pot_file) . " " . escapeshellarg($xml_file) );
+    if(is_string($coverage) && $coverage != 'posts' && $coverage != 'pages') {
+        die("First argument of wppo_update_pot() must be \"posts\" or \"pages\" (or an array of both).");
+    }
+    
+    if(is_string($coverage)) {
+        $coverage = array($coverage);
+    }
+    
+    foreach($coverage as $post_type) {
+        
+        $pot_file = WPPO_DIR.$post_type.".pot";
+        $xml_file = WPPO_DIR.$post_type.".xml";
+        
+        $generated_xml = wppo_generate_po_xml($post_type);
+        
+        if(is_writable($xml_file)) {
+            file_put_contents($xml_file, $generated_xml);
+        } else {
+            die("Ooops. We got an error here. The file ".$xml_file." must be writeable otherwise we can't do anything.");
+        }
+        
+        $output = shell_exec(WPPO_XML2PO_COMMAND." -m xhtml -o ".escapeshellarg($pot_file)." ".escapeshellarg($xml_file));
+        
+        // Updates translation_log table.
+        // FIXME
+        
+    }
+    
+    
     
 }
 add_action('post_updated', 'wppo_update_pot_file');
