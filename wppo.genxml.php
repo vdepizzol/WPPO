@@ -18,69 +18,69 @@
 // This code by now only generates an XML with all the content from
 // WordPress database.
 
-require_once (ABSPATH . "wp-config.php");
+require_once(ABSPATH."wp-config.php");
 
-function wppo_generate_po_xml () {
-  global $wpdb;
+function wppo_generate_po_xml() {
+    global $wpdb;
 
-  $myrows = $wpdb->get_results ("SELECT ID, post_content, post_title, post_excerpt, post_name
+    $myrows = $wpdb->get_results("SELECT ID, post_content, post_title, post_excerpt, post_name
                                  FROM wp_posts
                                  WHERE post_type != 'revision' && post_type != 'nav_menu_item'");
 
 
 
-  $broken_dom_pages = array ();
+    $broken_dom_pages = array();
 
-  $dom = new DOMDocument ('1.0', 'utf-8');
-  $dom->formatOutput = true;
-  $root = $dom->createElement ("website");
+    $dom = new DOMDocument('1.0', 'utf-8');
+    $dom->formatOutput = true;
+    $root = $dom->createElement("website");
 
-  foreach ($myrows as $key => $value) {
-    $page = $dom->createElement ("page");
+    foreach($myrows as $key => $value) {
+        $page = $dom->createElement("page");
 
-    // ID
-    $page_id = $dom->createAttribute ('id');
-    $page_id_value = $dom->createTextNode ($value->ID);
-    $page_id->appendChild ($page_id_value);
-    $page->appendChild ($page_id);
+        // ID
+        $page_id = $dom->createAttribute('id');
+        $page_id_value = $dom->createTextNode($value->ID);
+        $page_id->appendChild($page_id_value);
+        $page->appendChild($page_id);
 
-    // page_title
-    $page_title = $dom->createElement ("title");
-    $page_title_value = $dom->createTextNode ($value->post_title);
-    $page_title->appendChild ($page_title_value);
-    $page->appendChild ($page_title);
-    
-    // page_excerpt
-    $page_excerpt = $dom->createElement ("excerpt");
-    $page_excerpt_value = $dom->createTextNode ($value->post_excerpt);
-    $page_excerpt->appendChild ($page_excerpt_value);
-    $page->appendChild ($page_excerpt);
+        // page_title
+        $page_title = $dom->createElement("title");
+        $page_title_value = $dom->createTextNode($value->post_title);
+        $page_title->appendChild($page_title_value);
+        $page->appendChild($page_title);
 
-    // page_name
-    $page_name = $dom->createElement ("name");
-    $page_name_value = $dom->createTextNode ($value->post_name);
-    $page_name->appendChild ($page_name_value);
-    $page->appendChild ($page_name);
+        // page_excerpt
+        $page_excerpt = $dom->createElement("excerpt");
+        $page_excerpt_value = $dom->createTextNode($value->post_excerpt);
+        $page_excerpt->appendChild($page_excerpt_value);
+        $page->appendChild($page_excerpt);
 
-    // page_content
-    $value->post_content = wpautop ($value->post_content);
+        // page_name
+        $page_name = $dom->createElement("name");
+        $page_name_value = $dom->createTextNode($value->post_name);
+        $page_name->appendChild($page_name_value);
+        $page->appendChild($page_name);
 
-    $content_xml = $dom->createDocumentFragment ();
-    $content_xml->appendXML ('<html>'.$value->post_content.'</html>');
+        // page_content
+        $value->post_content = wpautop($value->post_content);
 
-    if ($content_xml == false) {
-      $broken_dom_pages[] = $value->ID;
+        $content_xml = $dom->createDocumentFragment();
+        $content_xml->appendXML('<html>'.$value->post_content.'</html>');
+
+        if ($content_xml == false) {
+            $broken_dom_pages[] = $value->ID;
+        }
+
+        $page_content = $dom->createElement("content");
+        $page_content->appendChild($content_xml);
+        $page->appendChild($page_content);
+
+        $root->appendChild($page);
     }
 
-    $page_content = $dom->createElement ("content");
-    $page_content->appendChild ($content_xml);
-    $page->appendChild ($page_content);
-
-    $root->appendChild ($page);
-  }
-
-  $dom->appendChild ($root);
-  $content = $dom->saveXML ();
-  return $content;
+    $dom->appendChild($root);
+    $content = $dom->saveXML();
+    return $content;
 }
 ?>
