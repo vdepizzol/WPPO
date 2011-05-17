@@ -23,14 +23,16 @@ require_once(ABSPATH."wp-config.php");
 function wppo_generate_po_xml($post_type) {
     global $wpdb;
     
+    if($post_type != 'pages' || $post_type != 'posts') {
+        return false;
+    }
+    
     $sql = "SELECT ID, post_content, post_title, post_excerpt, post_name 
             FROM wp_posts
             WHERE
                 post_status IN ('publish', 'future') AND
                 post_type != 'revision'";
     
-    
-
     if($post_type == 'pages') {
         
         /*
@@ -55,6 +57,10 @@ function wppo_generate_po_xml($post_type) {
     
     $posts = $wpdb->get_results($sql);
     
+    /*
+     * We still don't do anything with the list of broken DOM pages
+     * FIXME
+     */
     $broken_dom_pages = array();
 
     /*
