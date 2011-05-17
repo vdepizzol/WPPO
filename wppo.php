@@ -36,7 +36,7 @@ if(!function_exists('_log')) {
 }
 
 
-require_once("wppo.genxml.php");
+require_once("backend.php");
 
 /* 
  * Folder structure:

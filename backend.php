@@ -72,9 +72,8 @@ function wppo_update_pot($coverage = array('posts', 'pages')) {
 
 
 /*
- * this action will be fired when damned lies system send an updated version of
- * a po file. This function needs to take care of creating the translated
- * xml file and separate its content to the wordpress database
+ * This function will check for changes in all the PO files,
+ * in order to try to keep track of changes in the translations
  */
 function wppo_check_for_po_changes() {
     global $wpdb;
