@@ -283,6 +283,7 @@ function wppo_get_lang() {
         
         $check_lang = $wpdb->get_row("SELECT lang_code, lang_name FROM ".WPPO_PREFIX."languages WHERE lang_status = 'visible' AND lang_code = '".mysql_real_escape_string($defined_lang)."'", ARRAY_A);
         if($wpdb->num_rows === 1) {
+            $wppo_cache['lang'] = $defined_lang;
             return $defined_lang;
         }
         
@@ -380,7 +381,8 @@ function wppo_get_translated_data($string, $id = null) {
  * Automatically it also updates the internal XML used for translation.
  * 
  * TODO:
- * For reference it shouldn't delete the previous POT files
+ * For reference it shouldn't just replace the previous POT files.
+ * It should keep a backup somewhere else.
  * 
  */
 function wppo_update_pot($coverage = array('posts', 'pages')) {

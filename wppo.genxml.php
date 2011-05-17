@@ -20,65 +20,92 @@
 
 require_once(ABSPATH."wp-config.php");
 
-function wppo_generate_po_xml() {
+function wppo_generate_po_xml($post_type) {
     global $wpdb;
+    
+    $sql = "SELECT ID, post_content, post_title, post_excerpt, post_name 
+            FROM wp_posts
+            WHERE
+                post_status IN ('publish', 'future') AND
+                post_type != 'revision'";
+    
+    
 
-    $myrows = $wpdb->get_results("SELECT ID, post_content, post_title, post_excerpt, post_name
-                                 FROM wp_posts
-                                 WHERE post_type != 'revision' && post_type != 'nav_menu_item'");
-
-
-
+    if($post_type == 'pages') {
+        
+        /*
+         * Pages must include also some permanent data in the future,
+         * like website name and navigation menus
+         * TODO
+         */
+        
+        $sql .= "AND post_type = 'page'";
+        
+    } elseif($post_type == 'posts') {
+        
+        /*
+         * We need to verify how attachments are stored in wp_posts before
+         * giving it to the translators
+         * FIXME
+         */
+        
+        $sql .= "AND post_type != 'page' AND post_type != 'nav_menu'";
+        
+    }
+    
+    $posts = $wpdb->get_results($sql);
+    
     $broken_dom_pages = array();
 
+    /*
+     * Starts to create the XML
+     */
     $dom = new DOMDocument('1.0', 'utf-8');
     $dom->formatOutput = true;
-    $root = $dom->createElement("website");
+    $root = $dom->createElement("wppo");
 
-    foreach($myrows as $key => $value) {
+    foreach($posts as $id => $row) {
         $page = $dom->createElement("page");
+        
+        $attributes = array(
+            'id' => 'ID',
+            'title' => 'post_title',
+            'excerpt' => 'post_excerpt',
+            'name' => 'post_name',
+            'content' => 'post_content'
+        );
+        
+        foreach($attributes as $tag => $column) {
+            
+            if($tag != 'content') {
+                
+                $node[$tag]['attr'] = $dom->createAttribute($tag);
+                $node[$tag]['value'] = $dom->createTextNode($value->{$column});
+                $node[$tag]['attr']->appendChild($node[$tag]['value']);
+                
+            } else {
+                
+                $value->{$column} = wpautop($value->{$column});
 
-        // ID
-        $page_id = $dom->createAttribute('id');
-        $page_id_value = $dom->createTextNode($value->ID);
-        $page_id->appendChild($page_id_value);
-        $page->appendChild($page_id);
+                $node[$tag]['value'] = $dom->createDocumentFragment();
+                $node[$tag]['value']->appendXML('<html>'.$value->{$column}.'</html>');
 
-        // page_title
-        $page_title = $dom->createElement("title");
-        $page_title_value = $dom->createTextNode($value->post_title);
-        $page_title->appendChild($page_title_value);
-        $page->appendChild($page_title);
+                if ($$node[$tag]['xml'] == false) {
+                    $broken_dom_pages[] = $value->ID;
+                }
 
-        // page_excerpt
-        $page_excerpt = $dom->createElement("excerpt");
-        $page_excerpt_value = $dom->createTextNode($value->post_excerpt);
-        $page_excerpt->appendChild($page_excerpt_value);
-        $page->appendChild($page_excerpt);
-
-        // page_name
-        $page_name = $dom->createElement("name");
-        $page_name_value = $dom->createTextNode($value->post_name);
-        $page_name->appendChild($page_name_value);
-        $page->appendChild($page_name);
-
-        // page_content
-        $value->post_content = wpautop($value->post_content);
-
-        $content_xml = $dom->createDocumentFragment();
-        $content_xml->appendXML('<html>'.$value->post_content.'</html>');
-
-        if ($content_xml == false) {
-            $broken_dom_pages[] = $value->ID;
+                $node[$tag]['attr'] = $dom->createElement($tag);
+                $node[$tag]['attr']->appendChild($node[$tag]['value']);
+                
+            }
+        
+            $page->appendChild($node[$tag]['attr']);
+            
         }
-
-        $page_content = $dom->createElement("content");
-        $page_content->appendChild($content_xml);
-        $page->appendChild($page_content);
-
+        
         $root->appendChild($page);
     }
-
+    
     $dom->appendChild($root);
     $content = $dom->saveXML();
     return $content;
