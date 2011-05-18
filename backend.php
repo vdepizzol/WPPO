@@ -109,13 +109,31 @@ function wppo_check_for_po_changes() {
     foreach($po_dates as $post_type => $langs) {
         foreach($langs as $lang => $last_modified) {
             
-            // Check last modified here
-            // FIXME
-            $last_saved = 'X';
             
-            if($last_modified != $last_saved) {
+            /*
+             * Check if the existing PO file exists in the
+             * translation_log table
+             */
+            if(!$wpdb->get_row("SELECT translation_date FROM `".WPPO_PREFIX."translation_log` WHERE lang = '".mysql_real_escape_string($lang)."' AND post_type = '".mysql_real_escape_string($post_type)."' AND translation_date = '".mysql_real_escape_string($last_modified)."' LIMIT 1")) {
+                
+                /*
+                 * We are not inserting the status of the PO file
+                 * FIXME
+                 */
+                $wpdb->insert(WPPO_PREFIX."translation_log",
+                    array(
+                        'lang' => $lang,
+                        'post_type' => $post_type,
+                        'translation_date' => $last_modified
+                        //'status' => TODO
+                    ),
+                    array('%s', '%s', '%s')
+                );
+                
                 $po_files_needing_update[$post_type][] = $lang;
+                
             }
+            
         }
     }
     
@@ -130,89 +148,46 @@ function wppo_check_for_po_changes() {
             $command = WPPO_XML2PO_COMMAND." -m xhtml -p ".escapeshellarg($po_file)." -o ".escapeshellarg($translated_xml_file)." ".escapeshellarg($original_xml_file);
             $output = shell_exec($command);
             
-            // read generated translated xml file
-            // FIXME
+            $translated_xml_content = file_get_contents($translated_xml_file);
             
-            // save translation log
-            // FIXME
-        }
-    }
-    
-    ////////////////////////////////////////////////////////
-    // old code of this function bellow
-    ////////////////////////////////////////////////////////
-    
-    /*
-     * WordPress pattern for validating data
-     */
-    $table_format = array('%s', '%d', '%s', '%s', '%s');
-    
-    // FIXME
-    $post_type = 'posts';
-    
-    
-    
-    $po_dir = WPPO_DIR."/".$post_type;
-    
-    
-    if($handle = opendir(PO_DIR)) {
-        while(false !== ($po_file = readdir($handle))) {
-            /*
-             * Gets all the .po files from PO_DIR. Then it will generate a translated
-             * XML for each language.
-             *
-             * All the po files must use the following format: "gnomesite.[lang-code].po"
-             *
-             */
-            if(strpos($po_file, '.po') !== false && strpos($po_file, '.pot') === false) {
-                $po_file_array = explode('.', $po_file);
+            $dom = new DOMDocument();
+            $dom->loadXML($translated_xml_content);
+            
+            $posts = $dom->getElementsByTagName('post');
+            
+            $attributes = array(
+                'id' => 'post_id',
+                'title' => 'translated_title',
+                'excerpt' => 'translated_excerpt',
+                'name' => 'translated_name',
+                'content' => 'translated_content'
+            );
+            
+            foreach($posts as $post) {
+                
+                foreach($attributes as $tag => $column) {
+                    
+                    if($tag != 'content') {
+                        $node[$column] = $post->getElementsByTagName($tag)->item(0)->nodeValue;
+                    } else {
+                        $temporary_content_tree = $post->getElementsByTagName('html')->item(0)->childNodes;
+                        $node[$column] = '';
+                        foreach($temporary_content_tree as $element) {
+                            $node[$column] .= $element->ownerDocument->saveXML($element);
+                        }
+                    }
+                }
+                
+                $node['lang'] = $lang;
                 
                 /*
-                 * Arranging the name of the translated xml to something like
-                 * "gnomesite.pt-br.xml".
+                 * Stores in the table the translated version of the page
                  */
-                $lang = $po_file_array[1];
-                $translated_xml_file = XML_DIR . 'gnomesite.' . $lang . '.xml';
-                $cmd = "/usr/bin/xml2po -m xhtml -p " . PO_DIR . "$po_file -o $translated_xml_file " . XML_DIR . "gnomesite.xml";
-                $out = exec($cmd);
-
-                $translated_xml = file_get_contents($translated_xml_file);
-                $dom = new DOMDocument();
-                $dom->loadXML($translated_xml);
-                
-                $pages = $dom->getElementsByTagName('page');
-                
-                foreach($pages as $page) {
-                
-                    $page_id      = $page->getAttributeNode('id')->value;
-                    $page_title   = $page->getElementsByTagName('title')->item(0)->nodeValue;
-                    $page_excerpt = $page->getElementsByTagName('excerpt')->item(0)->nodeValue;
-                    $page_name    = $page->getElementsByTagName('name')->item(0)->nodeValue;
-
-
-                    $page_content_elements = $page->getElementsByTagName('html')->item(0)->childNodes;
-                    $page_content = '';
-                    foreach($page_content_elements as $element) {
-                        $page_content .= $element->ownerDocument->saveXML($element);
-                    }
-                    
-                    $page_array = array('lang' => $lang,
-                                        'post_id' => $page_id,
-                                        'translated_title' => $page_title,
-                                        'translated_excerpt' => $page_excerpt,
-                                        'translated_name' => $page_name,
-                                        'translated_content' => $page_content
-                                        );
-                    
-                    /*
-                     * Stores in the table the translated version of the page
-                     */
-                    $wpdb->get_row("SELECT wppo_id FROM ".WPPO_PREFIX."posts WHERE post_id = '". mysql_real_escape_string($page_id) ."' AND lang = '". mysql_real_escape_string($lang) ."'");
-                    if($wpdb->num_rows == 0) {
-                        $wpdb->insert(WPPO_PREFIX."posts", $page_array, $table_format);
-                    } else {
-                        $wpdb->update(WPPO_PREFIX."posts", $page_array, array('post_id' => $page_id, 'lang' => $lang), $table_format);
-                    }
+                $table_format = array('%s', '%d', '%s', '%s', '%s');
+                if(!$wpdb->get_row("SELECT wppo_id FROM ".WPPO_PREFIX."posts WHERE post_id = '". mysql_real_escape_string($page_id) ."' AND lang = '". mysql_real_escape_string($lang) ."'")) {
+                    $wpdb->insert(WPPO_PREFIX."posts", $node, $table_format);
+                } else {
+                    $wpdb->update(WPPO_PREFIX."posts", $node, array('post_id' => $node['post_id'], 'lang' => $lang), $table_format);
                 }
             }
         }
@@ -271,7 +246,7 @@ function wppo_generate_po_xml($post_type) {
     $root = $dom->createElement("wppo");
 
     foreach($posts as $id => $row) {
-        $page = $dom->createElement("page");
+        $page = $dom->createElement("post");
         
         $attributes = array(
             'id' => 'ID',
@@ -305,11 +280,11 @@ function wppo_generate_po_xml($post_type) {
                 
             }
         
-            $page->appendChild($node[$tag]['attr']);
+            $post->appendChild($node[$tag]['attr']);
             
         }
         
-        $root->appendChild($page);
+        $root->appendChild($post);
     }
     
     $dom->appendChild($root);
