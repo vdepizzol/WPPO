@@ -141,7 +141,7 @@ function wppo_check_for_po_changes() {
         foreach($langs as $lang) {
             
             $original_xml_file   = WPPO_DIR.$post_type.'.xml';
-            $po_file             = WPPO_DIR.$post_type.'/po/'.$lang.'.po'
+            $po_file             = WPPO_DIR.$post_type.'/po/'.$lang.'.po';
             $translated_xml_file = WPPO_DIR.$post_type.'/xml/'.$lang.'.xml';
             
             
