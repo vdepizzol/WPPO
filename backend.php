@@ -34,26 +34,26 @@ function wppo_update_pot($coverage = array('posts', 'pages')) {
     
     global $wpdb;
     
-    if($coverage == 'all') {
+    if ($coverage == 'all') {
         $coverage = array('posts', 'pages');
     }
     
-    if(is_string($coverage) && $coverage != 'posts' && $coverage != 'pages') {
+    if (is_string($coverage) && $coverage != 'posts' && $coverage != 'pages') {
         die("First argument of wppo_update_pot() must be \"posts\" or \"pages\" (or an array of both).");
     }
     
-    if(is_string($coverage)) {
+    if (is_string($coverage)) {
         $coverage = array($coverage);
     }
     
-    foreach($coverage as $post_type) {
+    foreach ($coverage as $post_type) {
         
         $pot_file = WPPO_DIR.$post_type.".pot";
         $xml_file = WPPO_DIR.$post_type.".xml";
         
         $generated_xml = wppo_generate_po_xml($post_type);
         
-        if(is_writable($xml_file)) {
+        if (is_writable($xml_file)) {
             file_put_contents($xml_file, $generated_xml);
         } else {
             die("Ooops. We got an error here. The file ".$xml_file." must be writeable otherwise we can't do anything.");
@@ -80,17 +80,17 @@ function wppo_check_for_po_changes() {
     
     $po_dates = array();
     
-    if($post_type_handle = opendir(WPPO_DIR)) {
+    if ($post_type_handle = opendir(WPPO_DIR)) {
         
         // Walk trough post_type folders
         while(false !== ($post_type_item = readdir($post_type_handle))) {
-            if(is_dir($post_type_item) && ($post_type_item == 'posts' || $post_type_item == 'pages')) {
+            if (is_dir($post_type_item) && ($post_type_item == 'posts' || $post_type_item == 'pages')) {
                 
                 // Walk trough lang files inside po folder
-                if($lang_handle = opendir(WPPO_DIR.$post_type_item.'/po/')) {
+                if ($lang_handle = opendir(WPPO_DIR.$post_type_item.'/po/')) {
                     while(false !== ($lang_item = readdir($lang_handle))) {
                         
-                        if(strpos($lang_item, '.po') !== false && strpos($lang_item, '.pot') === false) {
+                        if (strpos($lang_item, '.po') !== false && strpos($lang_item, '.pot') === false) {
                             
                             $lang = explode(".", $lang_item);
                             $lang = $lang[0];
@@ -106,15 +106,15 @@ function wppo_check_for_po_changes() {
     
     $po_files_needing_update = array();
     
-    foreach($po_dates as $post_type => $langs) {
-        foreach($langs as $lang => $last_modified) {
+    foreach ($po_dates as $post_type => $langs) {
+        foreach ($langs as $lang => $last_modified) {
             
             
             /*
              * Check if the existing PO file exists in the
              * translation_log table
              */
-            if(!$wpdb->get_row("SELECT translation_date FROM `".WPPO_PREFIX."translation_log` WHERE lang = '".mysql_real_escape_string($lang)."' AND post_type = '".mysql_real_escape_string($post_type)."' AND translation_date = '".mysql_real_escape_string($last_modified)."' LIMIT 1")) {
+            if (!$wpdb->get_row("SELECT translation_date FROM `".WPPO_PREFIX."translation_log` WHERE lang = '".mysql_real_escape_string($lang)."' AND post_type = '".mysql_real_escape_string($post_type)."' AND translation_date = '".mysql_real_escape_string($last_modified)."' LIMIT 1")) {
                 
                 /*
                  * We are not inserting the status of the PO file
@@ -137,8 +137,8 @@ function wppo_check_for_po_changes() {
         }
     }
     
-    foreach($po_files_needing_update as $post_type => $langs) {
-        foreach($langs as $lang) {
+    foreach ($po_files_needing_update as $post_type => $langs) {
+        foreach ($langs as $lang) {
             
             $original_xml_file   = WPPO_DIR.$post_type.'.xml';
             $po_file             = WPPO_DIR.$post_type.'/po/'.$lang.'.po';
@@ -163,16 +163,16 @@ function wppo_check_for_po_changes() {
                 'content' => 'translated_content'
             );
             
-            foreach($posts as $post) {
+            foreach ($posts as $post) {
                 
-                foreach($attributes as $tag => $column) {
+                foreach ($attributes as $tag => $column) {
                     
-                    if($tag != 'content') {
+                    if ($tag != 'content') {
                         $node[$column] = $post->getElementsByTagName($tag)->item(0)->nodeValue;
                     } else {
                         $temporary_content_tree = $post->getElementsByTagName('html')->item(0)->childNodes;
                         $node[$column] = '';
-                        foreach($temporary_content_tree as $element) {
+                        foreach ($temporary_content_tree as $element) {
                             $node[$column] .= $element->ownerDocument->saveXML($element);
                         }
                     }
@@ -184,7 +184,7 @@ function wppo_check_for_po_changes() {
                  * Stores in the table the translated version of the page
                  */
                 $table_format = array('%s', '%d', '%s', '%s', '%s');
-                if(!$wpdb->get_row("SELECT wppo_id FROM ".WPPO_PREFIX."posts WHERE post_id = '". mysql_real_escape_string($page_id) ."' AND lang = '". mysql_real_escape_string($lang) ."'")) {
+                if (!$wpdb->get_row("SELECT wppo_id FROM ".WPPO_PREFIX."posts WHERE post_id = '". mysql_real_escape_string($page_id) ."' AND lang = '". mysql_real_escape_string($lang) ."'")) {
                     $wpdb->insert(WPPO_PREFIX."posts", $node, $table_format);
                 } else {
                     $wpdb->update(WPPO_PREFIX."posts", $node, array('post_id' => $node['post_id'], 'lang' => $lang), $table_format);
@@ -198,7 +198,7 @@ function wppo_check_for_po_changes() {
 function wppo_generate_po_xml($post_type) {
     global $wpdb;
     
-    if($post_type != 'pages' || $post_type != 'posts') {
+    if ($post_type != 'pages' || $post_type != 'posts') {
         return false;
     }
     
@@ -208,7 +208,7 @@ function wppo_generate_po_xml($post_type) {
                 post_status IN ('publish', 'future') AND
                 post_type != 'revision'";
     
-    if($post_type == 'pages') {
+    if ($post_type == 'pages') {
         
         /*
          * Pages must include also some permanent data in the future,
@@ -218,7 +218,7 @@ function wppo_generate_po_xml($post_type) {
         
         $sql .= "AND post_type = 'page'";
         
-    } elseif($post_type == 'posts') {
+    } elseif ($post_type == 'posts') {
         
         /*
          * We need to verify how attachments are stored in wp_posts before
@@ -245,7 +245,7 @@ function wppo_generate_po_xml($post_type) {
     $dom->formatOutput = true;
     $root = $dom->createElement("wppo");
 
-    foreach($posts as $id => $row) {
+    foreach ($posts as $id => $row) {
         $page = $dom->createElement("post");
         
         $attributes = array(
@@ -256,9 +256,9 @@ function wppo_generate_po_xml($post_type) {
             'content' => 'post_content'
         );
         
-        foreach($attributes as $tag => $column) {
+        foreach ($attributes as $tag => $column) {
             
-            if($tag != 'content') {
+            if ($tag != 'content') {
                 
                 $node[$tag]['attr'] = $dom->createAttribute($tag);
                 $node[$tag]['value'] = $dom->createTextNode($value->{$column});

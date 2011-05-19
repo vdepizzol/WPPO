@@ -23,10 +23,10 @@ License: AGPLv3
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-if(!function_exists('_log')) {
+if (!function_exists('_log')) {
     function _log( $message ) {
-        if(WP_DEBUG === true) {
-            if( is_array($message) || is_object($message) ){
+        if (WP_DEBUG === true) {
+            if ( is_array($message) || is_object($message) ){
                 file_put_contents(ABSPATH.'debug.log', print_r($message, true)."\n", FILE_APPEND);
             } else {
                 file_put_contents(ABSPATH.'debug.log', $message."\n" , FILE_APPEND);
@@ -64,7 +64,7 @@ define('WPPO_XML2PO_COMMAND', "/usr/bin/xml2po");
 $wppo_cache = array();
 
 
-if(is_admin()) {
+if (is_admin()) {
     require_once dirname(__FILE__).'/admin.php';
 }
 
@@ -107,8 +107,8 @@ function wppo_install() {
                                 ) ENGINE=MYISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;"
     );
     
-    foreach($tables as $name => $sql) {
-        if($wpdb->get_var("SHOW TABLES LIKE '".WPPO_PREFIX."{$name}'") != WPPO_PREFIX.$name) {
+    foreach ($tables as $name => $sql) {
+        if ($wpdb->get_var("SHOW TABLES LIKE '".WPPO_PREFIX."{$name}'") != WPPO_PREFIX.$name) {
             require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
             dbDelta($sql);
         }
@@ -121,33 +121,33 @@ function wppo_install() {
     $directories_for_post_types = array('pages', 'posts');
     $directories_for_formats = array('po', 'pot', 'xml');
     
-    if(!is_dir(WPPO_DIR)) {
+    if (!is_dir(WPPO_DIR)) {
         
-        if(!is_writable(ABSPATH)) {
+        if (!is_writable(ABSPATH)) {
             die("Please, make ".ABSPATH." a writeable directory or create manually a folder called “wppo” with chmod 0755 on it.");
         }
         
         mkdir(WPPO_DIR, 0755);
     }
     
-    if(!is_writable(WPPO_DIR)) {
+    if (!is_writable(WPPO_DIR)) {
         die("The directory ".WPPO_DIR." must be writeable.");
     }
     
-    foreach($directories_for_post_types as $directory) {
-        if(!is_dir(WPPO_DIR.'/'.$directory)) {
+    foreach ($directories_for_post_types as $directory) {
+        if (!is_dir(WPPO_DIR.'/'.$directory)) {
             mkdir(WPPO_DIR.'/'.$directory, 0755);
         } else {
-            if(!is_writable(WPPO_DIR."/".$directory)) {
+            if (!is_writable(WPPO_DIR."/".$directory)) {
                 die("All the folders inside ".WPPO_DIR." should be writeable.");
             }
         }
                 
-        foreach($directories_for_formats as $format) {
-            if(!is_dir(WPPO_DIR.'/'.$directory.'/'.$format)) {
+        foreach ($directories_for_formats as $format) {
+            if (!is_dir(WPPO_DIR.'/'.$directory.'/'.$format)) {
                 mkdir(WPPO_DIR.'/'.$directory.'/'.$format, 0755);
             } else {
-                if(!is_writable(WPPO_DIR."/".$directory."/".$format)) {
+                if (!is_writable(WPPO_DIR."/".$directory."/".$format)) {
                     die("All the folders inside ".WPPO_DIR." should be writeable.");
                 }
             }
@@ -188,7 +188,7 @@ function wppo_uninstall() {
     
     $tables = array('posts', 'languages', 'translation_log');
     
-    foreach($tables as $index => $name) {
+    foreach ($tables as $index => $name) {
         $tables[$index] = WPPO_PREFIX.$name;
     }
     
@@ -211,7 +211,7 @@ add_filter('the_title', function($title, $id) {
 
     $translated_title = trim(wppo_get_translated_data('translated_title', $id));
 
-    if(empty($translated_title)) {
+    if (empty($translated_title)) {
         return $title;
     } else {
         return $translated_title;
@@ -221,13 +221,13 @@ add_filter('the_title', function($title, $id) {
 add_filter('the_content', function($content) {
     global $wppo_cache, $post;
 
-    if(isset($wppo_cache['posts'][$post->ID])) {
+    if (isset($wppo_cache['posts'][$post->ID])) {
         $translated_content = $wppo_cache['posts'][$post->ID]['translated_content'];
     } else {
         $translated_content = trim(wppo_get_translated_data('translated_content', $post->ID));
     }
 
-    if(empty($translated_content)) {
+    if (empty($translated_content)) {
         return $content;
     } else {
         return $translated_content;
@@ -240,12 +240,12 @@ add_filter('get_pages', function($pages) {
 
     $lang = wppo_get_lang();
 
-    foreach($pages as $page) {
-        if(!isset($wppo_cache['posts'][$page->ID]) && $lang != 'C') {
+    foreach ($pages as $page) {
+        if (!isset($wppo_cache['posts'][$page->ID]) && $lang != 'C') {
           $wppo_cache['posts'][$page->ID] = $wpdb->get_row("SELECT * FROM " . WPPO_PREFIX . "posts WHERE post_id = '" . mysql_real_escape_string($page->ID) . "' AND lang = '" . mysql_real_escape_string($lang) . "'", ARRAY_A);
         }
         
-        if(isset($wppo_cache['posts'][$page->ID]) && is_array($wppo_cache['posts'][$page->ID])) {
+        if (isset($wppo_cache['posts'][$page->ID]) && is_array($wppo_cache['posts'][$page->ID])) {
           $page->post_title   = $wppo_cache['posts'][$page->ID]['translated_title'];
           $page->post_name    = $wppo_cache['posts'][$page->ID]['translated_name'];
           $page->post_content = $wppo_cache['posts'][$page->ID]['translated_content'];
@@ -262,28 +262,28 @@ function wppo_get_lang() {
     
     global $wpdb, $wppo_cache;
     
-    if(isset($wppo_cache['lang'])) {
+    if (isset($wppo_cache['lang'])) {
         
         return $wppo_cache['lang'];
         
-    } elseif(isset($_REQUEST['lang'])) {
+    } elseif (isset($_REQUEST['lang'])) {
         
         $defined_lang = $_REQUEST['lang'];
         
-    } elseif(isset($_SESSION['lang'])) {
+    } elseif (isset($_SESSION['lang'])) {
         
         $defined_lang = $_SESSION['lang'];
         
     }
     
-    if(isset($defined_lang)) {
+    if (isset($defined_lang)) {
         
         /*
          * Verify if the selected language really exists
          */
         
         $check_lang = $wpdb->get_row("SELECT lang_code, lang_name FROM ".WPPO_PREFIX."languages WHERE lang_status = 'visible' AND lang_code = '".mysql_real_escape_string($defined_lang)."'", ARRAY_A);
-        if($wpdb->num_rows === 1) {
+        if ($wpdb->num_rows === 1) {
             $wppo_cache['lang'] = $defined_lang;
             return $defined_lang;
         }
@@ -298,7 +298,7 @@ function wppo_get_lang() {
     $http_langs = explode(',', $_SERVER["HTTP_ACCEPT_LANGUAGE"]);
     
     $user_lang = array();
-    foreach($http_langs as $i => $value) {
+    foreach ($http_langs as $i => $value) {
         $user_lang[$i] = explode(';', $value);
         $user_lang[$i] = str_replace('-', '_', $user_lang[$i][0]);
         
@@ -306,28 +306,28 @@ function wppo_get_lang() {
          * If the first language available also contains the country code,
          * we'll automatically add as a second option the same language without the country code.
          */
-        if($i == 0 && strpos($user_lang[$i], '_') !== false) {
+        if ($i == 0 && strpos($user_lang[$i], '_') !== false) {
             $user_lang[$i+1] = explode('_', $user_lang[$i]);
             $user_lang[$i+1] = $user_lang[$i+1][0];
         }
     }
     
-    if(!isset($wppo_cache['available_lang'])) {
+    if (!isset($wppo_cache['available_lang'])) {
         $all_languages = $wpdb->get_results("SELECT lang_code, lang_name FROM ".WPPO_PREFIX."languages WHERE lang_status = 'visible'", ARRAY_A);
         
-        foreach($all_languages as $index => $array) {
+        foreach ($all_languages as $index => $array) {
             $wppo_cache['available_lang'][$array['lang_code']] = $array['lang_name'];
         }
     }
     
-    foreach($user_lang as $lang_code) {
-        if(isset($wppo_cache['available_lang'][$lang_code])) {
+    foreach ($user_lang as $lang_code) {
+        if (isset($wppo_cache['available_lang'][$lang_code])) {
             $defined_lang = $lang_code;
             break;
         }
     }
     
-    if(isset($defined_lang)) {
+    if (isset($defined_lang)) {
         $wppo_cache['lang'] = $defined_lang;
     } else {
         /*
@@ -350,23 +350,23 @@ function wppo_get_translated_data($string, $id = null) {
 
     $lang = wppo_get_lang();
 
-    if($id !== null) {
+    if ($id !== null) {
         $p = &get_post($id);
     } else {
         $p = $post;
     }
     
-    if($lang != "C") {
-        if(!isset($wppo_cache['posts'][$p->ID])) {
+    if ($lang != "C") {
+        if (!isset($wppo_cache['posts'][$p->ID])) {
             $wppo_cache['posts'][$p->ID] = $wpdb->get_row("SELECT * FROM " . WPPO_PREFIX . "posts WHERE post_id = '" . mysql_real_escape_string($p->ID). "' AND lang = '" . mysql_real_escape_string($lang) . "'", ARRAY_A);
         }
     
-        if(isset($wppo_cache['posts'][$p->ID][$string])) {
+        if (isset($wppo_cache['posts'][$p->ID][$string])) {
             return $wppo_cache['posts'][$p->ID][$string];
         }
     }
     
-    if($string == 'translated_content') {
+    if ($string == 'translated_content') {
         return wpautop($p->post_content);
     } else {
         return $p->{str_replace("translated_", "post_", $string)};
