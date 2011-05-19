@@ -44,7 +44,6 @@ require_once("backend.php");
  * 
  * Example:
  * /wppo/pages/po/fr.po
- * /wppo/posts/pot/es.pot
  * /wppo/posts/xml/pt_BR.xml
  * 
  * Global POT file:
@@ -119,7 +118,7 @@ function wppo_install() {
      * Create WPPO directories
      */
     $directories_for_post_types = array('pages', 'posts');
-    $directories_for_formats = array('po', 'pot', 'xml');
+    $directories_for_formats = array('po', 'xml');
     
     if (!is_dir(WPPO_DIR)) {
         
