@@ -26,7 +26,7 @@ License: AGPLv3
 if (!function_exists('_log')) {
     function _log( $message ) {
         if (WP_DEBUG === true) {
-            if ( is_array($message) || is_object($message) ){
+            if ( is_array($message) || is_object($message)) {
                 file_put_contents(ABSPATH.'debug.log', print_r($message, true)."\n", FILE_APPEND);
             } else {
                 file_put_contents(ABSPATH.'debug.log', $message."\n" , FILE_APPEND);
@@ -262,6 +262,8 @@ function wppo_get_lang() {
     
     global $wpdb, $wppo_cache;
     
+    
+
     if (isset($wppo_cache['lang'])) {
         
         return $wppo_cache['lang'];
@@ -282,7 +284,12 @@ function wppo_get_lang() {
          * Verify if the selected language really exists
          */
         
-        $check_lang = $wpdb->get_row("SELECT lang_code, lang_name FROM ".WPPO_PREFIX."languages WHERE lang_status = 'visible' AND lang_code = '".mysql_real_escape_string($defined_lang)."'", ARRAY_A);
+        $check_lang = $wpdb->get_row(
+            "SELECT lang_code, lang_name FROM "
+            .WPPO_PREFIX."languages WHERE lang_status = 'visible' AND lang_code = '"
+            .mysql_real_escape_string($defined_lang)."'", ARRAY_A
+        );
+
         if ($wpdb->num_rows === 1) {
             $wppo_cache['lang'] = $defined_lang;
             return $defined_lang;
@@ -294,21 +301,44 @@ function wppo_get_lang() {
      * Since at this point no one told us what language the user wants to see the content,
      * we'll try to guess from the HTTP headers
      */
-    
-    $http_langs = explode(',', $_SERVER["HTTP_ACCEPT_LANGUAGE"]);
-    
-    $user_lang = array();
-    foreach ($http_langs as $i => $value) {
-        $user_lang[$i] = explode(';', $value);
-        $user_lang[$i] = str_replace('-', '_', $user_lang[$i][0]);
-        
-        /*
-         * If the first language available also contains the country code,
-         * we'll automatically add as a second option the same language without the country code.
-         */
-        if ($i == 0 && strpos($user_lang[$i], '_') !== false) {
-            $user_lang[$i+1] = explode('_', $user_lang[$i]);
-            $user_lang[$i+1] = $user_lang[$i+1][0];
+    if (!function_exists('get_http_accept_lang')) {
+
+        function get_http_accept_lang() {
+            $langs = array();
+
+            if (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+                
+                $accept_lang_underscore = str_replace('-', '_', $_SERVER['HTTP_ACCEPT_LANGUAGE']); 
+            
+                preg_match_all('/([a-z]{1,8}(_[a-z]{1,8})?)\s*(;\s*q\s*=\s*(1|0\.[0-9]+))?/i', $accept_lang_underscore, $lang_parse);
+
+                if (count($lang_parse[1])) {
+                    $langs = array_combine($lang_parse[1], $lang_parse[4]);
+                	
+                    foreach ($langs as $lang => $val) {
+                        if ($val === '') {
+                            $langs[$lang] = 1;
+                        }
+                    }
+
+                    arsort($langs, SORT_NUMERIC);
+                    
+                    $langs = array_keys($langs);
+                    
+                    /*
+                     * If the first language available also contains the country code,
+                     * we'll automatically add as a second option the same language without the country code.
+                     */
+                    if ((strpos($langs[0], '_') !== false)) {
+                        $default_lang = array_shift($langs); 
+                        $fallback_lang = explode('_', $default_lang);
+                        array_unshift($langs, $fallback_lang[0]);
+                        array_unshift($langs, $default_lang);
+                    }
+                }
+            }
+            
+            return $langs;
         }
     }
     
@@ -319,6 +349,8 @@ function wppo_get_lang() {
             $wppo_cache['available_lang'][$array['lang_code']] = $array['lang_name'];
         }
     }
+    
+    $user_lang = get_http_accept_lang();
     
     foreach ($user_lang as $lang_code) {
         if (isset($wppo_cache['available_lang'][$lang_code])) {
@@ -374,3 +406,4 @@ function wppo_get_translated_data($string, $id = null) {
 }
 
 ?>
+
