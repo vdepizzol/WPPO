@@ -417,6 +417,33 @@ function wppo_get_lang() {
     return $defined_lang;
 }
 
+/*
+ * Since we just can't redefine constants without special php libraries, we need to
+ * ask to the admin manually remove it from wp-config.php.
+ * 
+ * However, if we find runkit_constant_redefine available, we'll try to use it
+ * to redefine the contant.
+ * 
+ */
+if (is_admin() && defined('WPLANG') && !function_exists('runkit_constant_redefine')) {
+    add_action('admin_notices', function() {
+        echo "<div class=\"updated fade\"><p>Please comment line <code>define('WPLANG', '');</code> in wp-config.php to make WPPO Plugin work correctly.</p></div>";
+    }); 
+}
+
+/*
+ * Define default language for WordPress template
+ */
+if (wppo_get_lang() != 'C') {
+    if(!defined('WPLANG') && !function_exists('runkit_constant_redefine')) {
+        define('WPLANG', wppo_get_lang());
+    }
+    
+    if(function_exists('runkit_constant_redefine')) {
+        runkit_constant_redefine('WPLANG', wppo_get_lang());
+    }
+}
+
 
 /*
  * Get all the translated data from the current post.
