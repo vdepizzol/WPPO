@@ -251,6 +251,30 @@ function wppo_generate_po_xml($post_type) {
     $dom = new DOMDocument('1.0', 'utf-8');
     $dom->formatOutput = true;
     $root = $dom->createElement("wppo");
+    
+    if ($post_type == 'pages') {
+        
+        /*
+         * Support for translated bloginfo strings
+         */
+        
+        $bloginfo = array('name', 'description');
+        
+        $node['bloginfo']['elem'] = $dom->createElement("bloginfo");
+        
+        foreach ($bloginfo as $row) {
+            
+            $node['bloginfo'][$row]['tag'] = $dom->createElement($row);
+            $node['bloginfo'][$row]['value'] = $dom->createTextNode(get_bloginfo($row));
+            $node['bloginfo'][$row]['tag']->appendChild($node['bloginfo'][$row]['value']);
+            
+            $node['bloginfo']['elem']->appendChild($node['bloginfo'][$row]['tag']);
+            
+        }
+        
+        $root->appendChild($node['bloginfo']['elem']);
+        
+    }
 
     foreach ($posts as $id => $row) {
         $post = $dom->createElement("post");
