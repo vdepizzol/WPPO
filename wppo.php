@@ -36,8 +36,6 @@ if (!function_exists('_log')) {
 }
 
 
-require_once("backend.php");
-
 /* 
  * Folder structure:
  * /wppo/[post_type]/[file_type]/[lang].[ext]
@@ -62,6 +60,8 @@ define('WPPO_XML2PO_COMMAND', "/usr/bin/xml2po");
 
 $wppo_cache = array();
 
+
+require_once dirname(__FILE__).'/backend.php';
 
 if (is_admin()) {
     require_once dirname(__FILE__).'/admin.php';
@@ -404,6 +404,7 @@ function wppo_get_lang() {
     }
     
     if (isset($defined_lang)) {
+        $_SESSION['lang'] = $defined_lang;
         $wppo_cache['lang'] = $defined_lang;
     } else {
         /*

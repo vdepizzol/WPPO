@@ -46,6 +46,7 @@ function wppo_update_pot($coverage = array('posts', 'pages')) {
         $coverage = array($coverage);
     }
     
+    
     foreach ($coverage as $post_type) {
         
         $pot_file = WPPO_DIR.$post_type.".pot";
@@ -168,7 +169,11 @@ function wppo_check_for_po_changes() {
                 foreach ($attributes as $tag => $column) {
                     
                     if ($tag != 'content') {
-                        $node[$column] = $post->getElementsByTagName($tag)->item(0)->nodeValue;
+                        if ($tag == 'id') {
+                            $node[$column] = $post->getAttributeNode($tag)->value;
+                        } else {
+                            $node[$column] = $post->getElementsByTagName($tag)->item(0)->nodeValue;
+                        }
                     } else {
                         $temporary_content_tree = $post->getElementsByTagName('html')->item(0)->childNodes;
                         $node[$column] = '';
@@ -198,7 +203,7 @@ function wppo_check_for_po_changes() {
 function wppo_generate_po_xml($post_type) {
     global $wpdb;
     
-    if ($post_type != 'pages' || $post_type != 'posts') {
+    if ($post_type != 'pages' && $post_type != 'posts') {
         return false;
     }
     
@@ -226,11 +231,13 @@ function wppo_generate_po_xml($post_type) {
          * FIXME
          */
         
-        $sql .= "AND post_type != 'page' AND post_type != 'nav_menu'";
+        $sql .= "AND post_type != 'page' AND post_type != 'nav_menu_item'";
         
     }
     
+    
     $posts = $wpdb->get_results($sql);
+    
     
     /*
      * We still don't do anything with the list of broken DOM pages
@@ -246,7 +253,7 @@ function wppo_generate_po_xml($post_type) {
     $root = $dom->createElement("wppo");
 
     foreach ($posts as $id => $row) {
-        $page = $dom->createElement("post");
+        $post = $dom->createElement("post");
         
         $attributes = array(
             'id' => 'ID',
@@ -260,19 +267,25 @@ function wppo_generate_po_xml($post_type) {
             
             if ($tag != 'content') {
                 
-                $node[$tag]['attr'] = $dom->createAttribute($tag);
-                $node[$tag]['value'] = $dom->createTextNode($value->{$column});
+                if ($tag == 'id') {
+                    $node[$tag]['attr'] = $dom->createAttribute($tag);
+                } else {
+                    $node[$tag]['attr'] = $dom->createElement($tag);
+                }
+                $node[$tag]['value'] = $dom->createTextNode($row->{$column});
                 $node[$tag]['attr']->appendChild($node[$tag]['value']);
+                
                 
             } else {
                 
-                $value->{$column} = wpautop($value->{$column});
+                $row->{$column} = wpautop($row->{$column});
 
                 $node[$tag]['value'] = $dom->createDocumentFragment();
-                $node[$tag]['value']->appendXML('<html>'.$value->{$column}.'</html>');
+                $node[$tag]['value']->appendXML('<html>'.$row->{$column}.'</html>');
+                $node[$tag]['value'] = $node[$tag]['value'];
 
-                if ($$node[$tag]['xml'] == false) {
-                    $broken_dom_pages[] = $value->ID;
+                if ($node[$tag]['value'] == false) {
+                    $broken_dom_pages[] = $row->ID;
                 }
 
                 $node[$tag]['attr'] = $dom->createElement($tag);
@@ -289,6 +302,7 @@ function wppo_generate_po_xml($post_type) {
     
     $dom->appendChild($root);
     $content = $dom->saveXML();
+    
     return $content;
 }
 
