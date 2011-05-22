@@ -257,6 +257,51 @@ add_filter('get_pages', function($pages) {
 }, 1);
 
 
+/*
+ * Support for search in translated posts
+ */
+
+add_filter('posts_search', function($search) {
+    
+    global $wpdb;
+    
+    $lang = wppo_get_lang();
+    
+    if ($lang != 'C') {
+        $search = str_replace("({$wpdb->posts}.post_content LIKE ", "(".WPPO_PREFIX."posts.translated_content LIKE ", $search);
+        $search = str_replace("({$wpdb->posts}.post_title LIKE ",   "(".WPPO_PREFIX."posts.translated_title LIKE ", $search);
+    }
+    
+    return $search;
+    
+});
+
+/*
+add_filter('posts_request', function($request) {
+    print_r($request);
+    return $request;
+});
+*/
+
+add_filter('posts_clauses', function($clauses) {
+    
+    global $wpdb;
+    
+    $lang = wppo_get_lang();
+    
+    if ($lang != 'C') {
+        $clauses['join'] = "LEFT JOIN ".WPPO_PREFIX."posts ON $wpdb->posts.ID = ".WPPO_PREFIX."posts.post_id ".
+                           "AND ".WPPO_PREFIX."posts.lang = '".mysql_real_escape_string($lang)."'";
+        
+        $clauses['fields'] .= ", ".WPPO_PREFIX."posts.*";
+    }
+    
+    return $clauses;
+    
+});
+
+
+
 function wppo_get_lang() {
     
     global $wpdb, $wppo_cache;
