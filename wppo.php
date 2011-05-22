@@ -369,9 +369,10 @@ function wppo_get_lang() {
                     
                     /*
                      * If the first language available also contains the country code,
-                     * we'll automatically add as a second option the same language without the country code.
+                     * we'll automatically add as a second option the same language without the country code
+                     * (only if it doesn't already exists)
                      */
-                    if ((strpos($langs[0], '_') !== false)) {
+                    if ((strpos($langs[0], '_') !== false) && (!isset($langs[1]) || substr($langs[0], 0, 2) != substr($langs[1], 0, 2))) {
                         $default_lang = array_shift($langs); 
                         $fallback_lang = explode('_', $default_lang);
                         array_unshift($langs, $fallback_lang[0]);
