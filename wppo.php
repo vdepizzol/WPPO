@@ -292,8 +292,6 @@ add_filter('posts_clauses', function($clauses) {
     if ($lang != 'C') {
         $clauses['join'] = "LEFT JOIN ".WPPO_PREFIX."posts ON $wpdb->posts.ID = ".WPPO_PREFIX."posts.post_id ".
                            "AND ".WPPO_PREFIX."posts.lang = '".mysql_real_escape_string($lang)."'";
-        
-        $clauses['fields'] .= ", ".WPPO_PREFIX."posts.*";
     }
     
     return $clauses;
