@@ -207,7 +207,7 @@ register_deactivation_hook(__FILE__, 'wppo_uninstall');
 
 add_filter('the_title', function($title, $id) {
     global $wppo_cache;
-
+    
     $translated_title = trim(wppo_get_translated_data('translated_title', $id));
 
     if (empty($translated_title)) {
@@ -239,16 +239,16 @@ add_filter('get_pages', function($pages) {
 
     $lang = wppo_get_lang();
 
-    foreach ($pages as $page) {
+    foreach ($pages as $index => $page) {
         if (!isset($wppo_cache['posts'][$page->ID]) && $lang != 'C') {
             $wppo_cache['posts'][$page->ID] = $wpdb->get_row("SELECT * FROM " . WPPO_PREFIX . "posts WHERE post_id = '" . mysql_real_escape_string($page->ID) . "' AND lang = '" . mysql_real_escape_string($lang) . "'", ARRAY_A);
         }
         
         if (isset($wppo_cache['posts'][$page->ID]) && is_array($wppo_cache['posts'][$page->ID])) {
-            $page->post_title   = $wppo_cache['posts'][$page->ID]['translated_title'];
-            $page->post_name    = $wppo_cache['posts'][$page->ID]['translated_name'];
-            $page->post_content = $wppo_cache['posts'][$page->ID]['translated_content'];
-            $page->post_excerpt = $wppo_cache['posts'][$page->ID]['translated_excerpt'];
+            $pages[$index]->post_title   = $wppo_cache['posts'][$page->ID]['translated_title'];
+            $pages[$index]->post_name    = $wppo_cache['posts'][$page->ID]['translated_name'];
+            $pages[$index]->post_content = $wppo_cache['posts'][$page->ID]['translated_content'];
+            $pages[$index]->post_excerpt = $wppo_cache['posts'][$page->ID]['translated_excerpt'];
         }
     }
     
