@@ -67,8 +67,6 @@ function wppo_update_pot($coverage = array('posts', 'pages')) {
         
     }
     
-    
-    
 }
 
 
@@ -207,7 +205,7 @@ function wppo_generate_po_xml($post_type) {
         return false;
     }
     
-    $sql = "SELECT ID, post_content, post_title, post_excerpt, post_name 
+    $sql = "SELECT ID, post_content, post_title, post_excerpt, post_name, post_type
             FROM wp_posts
             WHERE
                 post_status IN ('publish', 'future') AND
@@ -221,7 +219,7 @@ function wppo_generate_po_xml($post_type) {
          * TODO
          */
         
-        $sql .= "AND post_type = 'page'";
+        $sql .= " AND post_type IN ('page', 'nav_menu_item') ORDER BY post_type ASC";
         
     } elseif ($post_type == 'posts') {
         
@@ -231,7 +229,7 @@ function wppo_generate_po_xml($post_type) {
          * FIXME
          */
         
-        $sql .= "AND post_type != 'page' AND post_type != 'nav_menu_item'";
+        $sql .= " AND post_type NOT IN ('page', 'nav_menu_item')";
         
     }
     
@@ -277,51 +275,77 @@ function wppo_generate_po_xml($post_type) {
     }
 
     foreach ($posts as $id => $row) {
-        $post = $dom->createElement("post");
         
-        $attributes = array(
-            'id' => 'ID',
-            'title' => 'post_title',
-            'excerpt' => 'post_excerpt',
-            'name' => 'post_name',
-            'content' => 'post_content'
-        );
-        
-        foreach ($attributes as $tag => $column) {
-            
-            if ($tag != 'content') {
-                
-                if ($tag == 'id') {
-                    $node[$tag]['attr'] = $dom->createAttribute($tag);
-                } else {
-                    $node[$tag]['attr'] = $dom->createElement($tag);
-                }
-                $node[$tag]['value'] = $dom->createTextNode($row->{$column});
-                $node[$tag]['attr']->appendChild($node[$tag]['value']);
-                
-                
-            } else {
-                
-                $row->{$column} = wpautop($row->{$column});
-
-                $node[$tag]['value'] = $dom->createDocumentFragment();
-                $node[$tag]['value']->appendXML('<html>'.$row->{$column}.'</html>');
-                $node[$tag]['value'] = $node[$tag]['value'];
-
-                if ($node[$tag]['value'] == false) {
-                    $broken_dom_pages[] = $row->ID;
-                }
-
-                $node[$tag]['attr'] = $dom->createElement($tag);
-                $node[$tag]['attr']->appendChild($node[$tag]['value']);
-                
-            }
-        
-            $post->appendChild($node[$tag]['attr']);
-            
+        /*
+         * This will verify if the item is not repeating any existing data
+         * from other page. This happens when post_type is nav_menu_item
+         * referring directly to a page.
+         */
+        $post_linked_id = get_post_meta($row->ID, '_menu_item_object_id');
+        if (isset($post_linked_id[0])) {
+            $post_linked_id = $post_linked_id[0];
+        } else {
+            $post_linked_id = false;
         }
         
-        $root->appendChild($post);
+        if ($row->ID == $post_linked_id || $post_linked_id == false) {
+        
+            $post = $dom->createElement("post");
+            
+            $attributes = array(
+                'id' => 'ID',
+                'title' => 'post_title',
+                'excerpt' => 'post_excerpt',
+                'name' => 'post_name',
+                'content' => 'post_content',
+            );
+            
+            foreach ($attributes as $tag => $column) {
+                
+                if($row->{$column} != '') {
+                    
+                    switch ($tag) {
+                        
+                        case 'content':
+                        
+                            $row->{$column} = wpautop($row->{$column});
+
+                            $node[$tag]['value'] = $dom->createDocumentFragment();
+                            $node[$tag]['value']->appendXML('<html>'.$row->{$column}.'</html>');
+                            $node[$tag]['value'] = $node[$tag]['value'];
+
+                            if ($node[$tag]['value'] == false) {
+                                $broken_dom_pages[] = $row->ID;
+                            }
+
+                            $node[$tag]['attr'] = $dom->createElement($tag);
+                            $node[$tag]['attr']->appendChild($node[$tag]['value']);
+                        
+                        break;
+                        
+                        default:
+                        
+                            if ($tag == 'id') {
+                                $node[$tag]['attr'] = $dom->createAttribute($tag);
+                            } else {
+                                $node[$tag]['attr'] = $dom->createElement($tag);
+                            }
+                            $node[$tag]['value'] = $dom->createTextNode($row->{$column});
+                            $node[$tag]['attr']->appendChild($node[$tag]['value']);
+                        
+                        break;
+                        
+                    }
+            
+                    $post->appendChild($node[$tag]['attr']);
+                    
+                }
+                
+            }
+            
+            $root->appendChild($post);
+            
+        }
     }
     
     $dom->appendChild($root);
