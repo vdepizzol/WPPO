@@ -102,7 +102,10 @@ function wppo_install() {
                                   `lang` varchar(10) NOT NULL,
                                   `post_type` varchar( 10 ) NOT NULL,
                                   `translation_date` timestamp NOT NULL,
-                                  `status` varchar(255) NOT NULL
+                                  `strings_total` double NOT NULL,
+                                  `strings_translated` double NOT NULL,
+                                  `strings_fuzzy` double NOT NULL,
+                                  `strings_untranslated` double NOT NULL,
                                 ) ENGINE=MYISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;"
     );
     

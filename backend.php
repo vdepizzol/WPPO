@@ -18,7 +18,7 @@
 
 
 
-
+require_once("poparser.class.php");
 
 /*
  * This function regenerates all the POT files, including all the recent
@@ -113,20 +113,29 @@ function wppo_check_for_po_changes() {
              * Check if the existing PO file exists in the
              * translation_log table
              */
-            if (!$wpdb->get_row("SELECT translation_date FROM `".WPPO_PREFIX."translation_log` WHERE lang = '".mysql_real_escape_string($lang)."' AND post_type = '".mysql_real_escape_string($post_type)."' AND translation_date = '".mysql_real_escape_string($last_modified)."' LIMIT 1")) {
+            if (!$wpdb->get_row("SELECT translation_date FROM `".WPPO_PREFIX."translation_log` ".
+                                "WHERE lang = '".mysql_real_escape_string($lang)."' ".
+                                "AND post_type = '".mysql_real_escape_string($post_type)."' ".
+                                "AND translation_date = '".mysql_real_escape_string($last_modified)."' ".
+                                "LIMIT 1")) {
                 
                 /*
-                 * We are not inserting the status of the PO file
-                 * FIXME
+                 * Here we get all the statistics regarding the file
                  */
+                
+                $stats = POParser::stats(WPPO_DIR.$post_type.'/po/'.$lang'.po');
+                
                 $wpdb->insert(WPPO_PREFIX."translation_log",
                     array(
                         'lang' => $lang,
                         'post_type' => $post_type,
                         'translation_date' => $last_modified
-                        //'status' => TODO
+                        'strings_total' => $stats['total'],
+                        'strings_translated' => $stats['translated'],
+                        'strings_fuzzy' => $stats['fuzzy'],
+                        'strings_untranslated' => $stats['untranslated'],
                     ),
-                    array('%s', '%s', '%s')
+                    array('%s', '%s', '%s', '%d', '%d', '%d', '%d')
                 );
                 
                 $po_files_needing_update[$post_type][] = $lang;
