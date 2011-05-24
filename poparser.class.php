@@ -19,7 +19,6 @@
 
 class POParser
 {
-    private $_filename;
 
     /**
      * Format of a msgid entry:
@@ -53,13 +52,16 @@ class POParser
      * @see http://www.gnu.org/software/gettext/manual/gettext.html#PO-Files
      */
 
-    protected function _dequote($str)
-    {
-        return substr($str, 1, -1);
-    }
 
-    public function parse($filename)
+    static public function parse($filename)
     {
+        
+        if(!function_exists('_dequote')) {
+            function _dequote($str) {
+                return substr($str, 1, -1);
+            }
+        }
+        
         // basic file verification
         if (!is_file($filename)) {
             throw new Exception('The specified file does not exist.');
@@ -93,7 +95,7 @@ class POParser
         );
         $i = 2;
         while ($line = $lines[$i++]) {
-            $line = $this->_dequote($line);
+            $line = _dequote($line);
             $colonIndex = strpos($line, ':');
             if ($colonIndex === false) {
                 continue;
@@ -157,11 +159,11 @@ class POParser
                     case '|': {
                         // msgi[d]
                         if ($comment[4] == 'd') {
-                            $entry['previous-msgid'] = $this->_dequote(substr($comment, 6));
+                            $entry['previous-msgid'] = _dequote(substr($comment, 6));
                         }
                         // msgc[t]xt
                         else {
-                            $entry['previous-msgctxt'] = $this->_dequote(substr($comment, 8));
+                            $entry['previous-msgctxt'] = _dequote(substr($comment, 8));
                         }
                         break;
                     }
@@ -169,28 +171,28 @@ class POParser
             }
             else if (strpos($line, 'msgid') === 0) {
                 if ($line[5] === ' ') {
-                    $entry['msgid'] = $this->_dequote(substr($line, 6));
+                    $entry['msgid'] = _dequote(substr($line, 6));
                 }
                 // msgid[_]plural
                 else {
-                    $entry['msgid_plural'] = $this->_dequote(substr($line, 13));
+                    $entry['msgid_plural'] = _dequote(substr($line, 13));
                 }
             }
             else if (strpos($line, 'msgstr') === 0) {
                 // no plural forms
                 if ($line[6] === ' ') {
-                    $entry['msgstr'] = $this->_dequote(substr($line, 7));
+                    $entry['msgstr'] = _dequote(substr($line, 7));
                 }
                 // plural forms
                 else {
                     if (!isset($entry['msgstr'])) {
                         $entry['msgstr'] = array();
                     }
-                    $entry['msgstr'][] = $this->_dequote(substr($line, strpos($line, ' ') + 1));
+                    $entry['msgstr'][] = _dequote(substr($line, strpos($line, ' ') + 1));
                 }
             }
             else if ($line[0] === '"' && isset($entry['msgstr'])) {
-                $line = "\n" . preg_replace('/([^\\\\])\\\\n$/', "\$1\n", $this->_dequote($line));
+                $line = "\n" . preg_replace('/([^\\\\])\\\\n$/', "\$1\n", _dequote($line));
                 if (!is_array($entry['msgstr'])) {
                     $entry['msgstr'] .= $line;
                 }
@@ -200,5 +202,45 @@ class POParser
             }
         }
         return array($headers, $entries);
+    }
+    
+    static public function stats($parsedArrayOrFile) {
+        
+        if (is_string($parsedArrayOrFile)) {
+            $parsedArray = POParser::parse($parsedArrayOrFile);
+        } elseif (is_array($parsedArrayOrFile)) {
+            $parsedArray = $parsedArrayOrFile;
+        } else {
+            return false;
+        }
+        
+        list($headers, $entries) = $parsedArray;
+        
+        $counter = array('total'        => 0,
+                         'translated'   => 0,
+                         'fuzzy'        => 0,
+                         'untranslated' => 0);
+        
+        foreach ($entries as $id => $message) {
+            if (!isset($message['msgid'])) {
+                unset($entries[$id]);
+            }
+        }
+        
+        foreach ($entries as $id => $message) {
+                
+                $counter['total']++;
+            
+                if (isset($message['flags']) && in_array("fuzzy", $message['flags'])) {
+                    $counter['fuzzy']++;
+                } elseif ($message['msgstr'] == '') {
+                    $counter['untranslated']++;
+                } else {
+                    $counter['translated']++;
+                }
+        }
+        
+        return $counter;
+        
     }
 }
