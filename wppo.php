@@ -308,13 +308,6 @@ add_filter('posts_search', function($search) {
     
 });
 
-/*
-add_filter('posts_request', function($request) {
-    print_r($request);
-    return $request;
-});
-*/
-
 add_filter('posts_clauses', function($clauses) {
     
     global $wpdb;
@@ -331,13 +324,15 @@ add_filter('posts_clauses', function($clauses) {
 });
 
 
+/*
+ * Main function to return the current defined language
+ */
 
 function wppo_get_lang() {
     
     global $wpdb, $wppo_cache;
     
     
-
     if (isset($wppo_cache['lang'])) {
         
         return $wppo_cache['lang'];
@@ -359,9 +354,8 @@ function wppo_get_lang() {
          */
         
         $check_lang = $wpdb->get_row(
-            "SELECT lang_code, lang_name FROM "
-            .WPPO_PREFIX."languages WHERE lang_status = 'visible' AND lang_code = '"
-            .mysql_real_escape_string($defined_lang)."'", ARRAY_A
+            "SELECT lang_code, lang_name FROM ".WPPO_PREFIX."languages ".
+            "WHERE lang_status = 'visible' AND lang_code = '".mysql_real_escape_string($defined_lang)."'", ARRAY_A
         );
 
         if ($wpdb->num_rows === 1) {
@@ -417,6 +411,10 @@ function wppo_get_lang() {
         }
     }
     
+    /*
+     * Here we'll keep in cache all the existing languages in database.
+     * We use it here to check which desired language from browser exists and is available.
+     */
     if (!isset($wppo_cache['available_lang'])) {
         $all_languages = $wpdb->get_results("SELECT lang_code, lang_name FROM ".WPPO_PREFIX."languages WHERE lang_status = 'visible'", ARRAY_A);
         
@@ -435,7 +433,6 @@ function wppo_get_lang() {
     }
     
     if (isset($defined_lang)) {
-        $_SESSION['lang'] = $defined_lang;
         $wppo_cache['lang'] = $defined_lang;
     } else {
         /*
