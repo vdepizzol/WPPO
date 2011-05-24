@@ -126,7 +126,9 @@ function wppo_install() {
             die("Please, make ".ABSPATH." a writeable directory or create manually a folder called “wppo” with chmod 0755 on it.");
         }
         
-        mkdir(WPPO_DIR, 0755);
+        if (!mkdir(WPPO_DIR, 0755)) {
+            die("The plugin tried but couldn't create the directory “".WPPO_DIR."”. Please, create it manually with chmod 0755.");
+        }
     }
     
     if (!is_writable(WPPO_DIR)) {
@@ -135,7 +137,9 @@ function wppo_install() {
     
     foreach ($directories_for_post_types as $directory) {
         if (!is_dir(WPPO_DIR.'/'.$directory)) {
-            mkdir(WPPO_DIR.'/'.$directory, 0755);
+            if (!mkdir(WPPO_DIR.'/'.$directory, 0755)) {
+                die("The plugin tried but couldn't create the directory “".WPPO_DIR.'/'.$directory."”. Please, create it manually with chmod 0755.");
+            }
         } else {
             if (!is_writable(WPPO_DIR."/".$directory)) {
                 die("All the folders inside ".WPPO_DIR." should be writeable.");
@@ -144,7 +148,9 @@ function wppo_install() {
                 
         foreach ($directories_for_formats as $format) {
             if (!is_dir(WPPO_DIR.'/'.$directory.'/'.$format)) {
-                mkdir(WPPO_DIR.'/'.$directory.'/'.$format, 0755);
+                if (!mkdir(WPPO_DIR.'/'.$directory.'/'.$format, 0755)) {
+                    die("The plugin tried but couldn't create the directory “".WPPO_DIR.'/'.$directory.'/'.$format."”. Please, create it manually with chmod 0755.");
+                }
             } else {
                 if (!is_writable(WPPO_DIR."/".$directory."/".$format)) {
                     die("All the folders inside ".WPPO_DIR." should be writeable.");
@@ -241,7 +247,9 @@ add_filter('get_pages', function($pages) {
 
     foreach ($pages as $index => $page) {
         if (!isset($wppo_cache['posts'][$page->ID]) && $lang != 'C') {
-            $wppo_cache['posts'][$page->ID] = $wpdb->get_row("SELECT * FROM " . WPPO_PREFIX . "posts WHERE post_id = '" . mysql_real_escape_string($page->ID) . "' AND lang = '" . mysql_real_escape_string($lang) . "'", ARRAY_A);
+            $wppo_cache['posts'][$page->ID] = $wpdb->get_row("SELECT * FROM " . WPPO_PREFIX . "posts ".
+                                                             "WHERE post_id = '" . mysql_real_escape_string($page->ID) . "' ".
+                                                             "AND lang = '" . mysql_real_escape_string($lang) . "'", ARRAY_A);
         }
         
         if (isset($wppo_cache['posts'][$page->ID]) && is_array($wppo_cache['posts'][$page->ID])) {
@@ -271,7 +279,9 @@ add_filter('wp_get_nav_menu_items', function($items) {
         if ($post_id != $item->ID) {
             
             if (!isset($wppo_cache['posts'][$post_id]) && $lang != 'C') {
-                $wppo_cache['posts'][$post_id] = $wpdb->get_row("SELECT * FROM " . WPPO_PREFIX . "posts WHERE post_id = '" . mysql_real_escape_string($post_id) . "' AND lang = '" . mysql_real_escape_string($lang) . "'", ARRAY_A);
+                $wppo_cache['posts'][$post_id] = $wpdb->get_row("SELECT * FROM " . WPPO_PREFIX . "posts ".
+                                                                "WHERE post_id = '" . mysql_real_escape_string($post_id) . "' ".
+                                                                "AND lang = '" . mysql_real_escape_string($lang) . "'", ARRAY_A);
             }
             
             if (isset($wppo_cache['posts'][$post_id]) && is_array($wppo_cache['posts'][$post_id])) {
@@ -490,7 +500,9 @@ function wppo_get_translated_data($string, $id = null) {
     
     if ($lang != "C") {
         if (!isset($wppo_cache['posts'][$p->ID])) {
-            $wppo_cache['posts'][$p->ID] = $wpdb->get_row("SELECT * FROM " . WPPO_PREFIX . "posts WHERE post_id = '" . mysql_real_escape_string($p->ID). "' AND lang = '" . mysql_real_escape_string($lang) . "'", ARRAY_A);
+            $wppo_cache['posts'][$p->ID] = $wpdb->get_row("SELECT * FROM " . WPPO_PREFIX . "posts ".
+                                                          "WHERE post_id = '" . mysql_real_escape_string($p->ID). "' ".
+                                                          "AND lang = '" . mysql_real_escape_string($lang) . "'", ARRAY_A);
         }
     
         if (isset($wppo_cache['posts'][$p->ID][$string])) {
