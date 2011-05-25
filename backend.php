@@ -123,13 +123,13 @@ function wppo_check_for_po_changes() {
                  * Here we get all the statistics regarding the file
                  */
                 
-                $stats = POParser::stats(WPPO_DIR.$post_type.'/po/'.$lang'.po');
+                $stats = POParser::stats(WPPO_DIR.$post_type.'/po/'.$lang.'.po');
                 
                 $wpdb->insert(WPPO_PREFIX."translation_log",
                     array(
                         'lang' => $lang,
                         'post_type' => $post_type,
-                        'translation_date' => $last_modified
+                        'translation_date' => $last_modified,
                         'strings_total' => $stats['total'],
                         'strings_translated' => $stats['translated'],
                         'strings_fuzzy' => $stats['fuzzy'],
