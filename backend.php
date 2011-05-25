@@ -166,8 +166,12 @@ function wppo_check_for_po_changes() {
             
             $posts = $dom->getElementsByTagName('post');
             
+            /*
+             * An underline before the tag name means that it is an
+             * attribute in the XML tree
+             */
             $attributes = array(
-                'id' => 'post_id',
+                '_id' => 'post_id',
                 'title' => 'translated_title',
                 'excerpt' => 'translated_excerpt',
                 'name' => 'translated_name',
@@ -178,22 +182,41 @@ function wppo_check_for_po_changes() {
                 
                 foreach ($attributes as $tag => $column) {
                     
-                    if ($tag != 'content') {
-                        if ($tag == 'id') {
-                            $node[$column] = $post->getAttributeNode($tag)->value;
-                        } else {
-                            if(!empty($post->getElementsByTagName($tag)->item(0)->nodeValue)) {
-                                $node[$column] = $post->getElementsByTagName($tag)->item(0)->nodeValue;
-                            }
-                        }
+                    if (substr($tag, 0, 1) == '_') {
+                        $tag = substr($tag, 1);
+                        $isAttribute = true;
                     } else {
-                        if(!empty($post->getElementsByTagName('content')->item(0)->childNodes)) {
-                            $temporary_content_tree = $post->getElementsByTagName('html')->item(0)->childNodes;
-                            $node[$column] = '';
-                            foreach ($temporary_content_tree as $element) {
-                                $node[$column] .= $element->ownerDocument->saveXML($element);
+                        $isAttribute = false;
+                    }
+                    
+                    switch ($tag) {
+                        
+                        case 'content':
+                        
+                            if (!empty($post->getElementsByTagName('content')->item(0)->childNodes)) {
+                                $temporary_content_tree = $post->getElementsByTagName('html')->item(0)->childNodes;
+                                $node[$column] = '';
+                                foreach ($temporary_content_tree as $element) {
+                                    $node[$column] .= $element->ownerDocument->saveXML($element);
+                                }
                             }
-                        }
+                            
+                        break;
+                        
+                        default:
+                        
+                            if ($isAttribute) {
+                                if (!empty($post->getAttributeNode($tag)->value)) {
+                                    $node[$column] = $post->getAttributeNode($tag)->value;
+                                }
+                            } else {
+                                if (!empty($post->getElementsByTagName($tag)->item(0)->nodeValue)) {
+                                    $node[$column] = $post->getElementsByTagName($tag)->item(0)->nodeValue;
+                                }
+                            }
+                            
+                        break;
+                        
                     }
                 }
                 
@@ -310,7 +333,7 @@ function wppo_generate_po_xml($post_type) {
             $post = $dom->createElement("post");
             
             $attributes = array(
-                'id' => 'ID',
+                '_id' => 'ID',
                 'title' => 'post_title',
                 'excerpt' => 'post_excerpt',
                 'name' => 'post_name',
@@ -318,6 +341,13 @@ function wppo_generate_po_xml($post_type) {
             );
             
             foreach ($attributes as $tag => $column) {
+                
+                if (substr($tag, 0, 1) == '_') {
+                    $tag = substr($tag, 1);
+                    $isAttribute = true;
+                } else {
+                    $isAttribute = false;
+                }
                 
                 if($row->{$column} != '') {
                     
@@ -341,8 +371,8 @@ function wppo_generate_po_xml($post_type) {
                         break;
                         
                         default:
-                        
-                            if ($tag == 'id') {
+                            
+                            if ($isAttribute) {
                                 $node[$tag]['attr'] = $dom->createAttribute($tag);
                             } else {
                                 $node[$tag]['attr'] = $dom->createElement($tag);
