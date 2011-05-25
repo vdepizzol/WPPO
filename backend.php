@@ -70,6 +70,8 @@ function wppo_update_pot($coverage = array('posts', 'pages')) {
 }
 
 
+
+
 /*
  * This function will check for changes in all the PO files,
  * in order to try to keep track of changes in the translations
@@ -83,7 +85,8 @@ function wppo_check_for_po_changes() {
         
         // Walk trough post_type folders
         while(false !== ($post_type_item = readdir($post_type_handle))) {
-            if (is_dir($post_type_item) && ($post_type_item == 'posts' || $post_type_item == 'pages')) {
+            
+            if (is_dir(WPPO_DIR.$post_type_item) && ($post_type_item == 'posts' || $post_type_item == 'pages')) {
                 
                 // Walk trough lang files inside po folder
                 if ($lang_handle = opendir(WPPO_DIR.$post_type_item.'/po/')) {
@@ -99,7 +102,9 @@ function wppo_check_for_po_changes() {
                         
                     }
                 }
+                
             }
+            
         }
     }
     
@@ -107,7 +112,6 @@ function wppo_check_for_po_changes() {
     
     foreach ($po_dates as $post_type => $langs) {
         foreach ($langs as $lang => $last_modified) {
-            
             
             /*
              * Check if the existing PO file exists in the
@@ -134,7 +138,7 @@ function wppo_check_for_po_changes() {
                         'strings_fuzzy' => $stats['fuzzy'],
                         'strings_untranslated' => $stats['untranslated'],
                     ),
-                    array('%s', '%s', '%s', '%d', '%d', '%d', '%d')
+                    array('%s', '%s', '%d', '%d', '%d', '%d', '%d')
                 );
                 
                 $po_files_needing_update[$post_type][] = $lang;
@@ -154,7 +158,7 @@ function wppo_check_for_po_changes() {
             
             $command = WPPO_XML2PO_COMMAND." -m xhtml -p ".escapeshellarg($po_file)." -o ".escapeshellarg($translated_xml_file)." ".escapeshellarg($original_xml_file);
             $output = shell_exec($command);
-            
+                        
             $translated_xml_content = file_get_contents($translated_xml_file);
             
             $dom = new DOMDocument();
@@ -178,13 +182,17 @@ function wppo_check_for_po_changes() {
                         if ($tag == 'id') {
                             $node[$column] = $post->getAttributeNode($tag)->value;
                         } else {
-                            $node[$column] = $post->getElementsByTagName($tag)->item(0)->nodeValue;
+                            if(!empty($post->getElementsByTagName($tag)->item(0)->nodeValue)) {
+                                $node[$column] = $post->getElementsByTagName($tag)->item(0)->nodeValue;
+                            }
                         }
                     } else {
-                        $temporary_content_tree = $post->getElementsByTagName('html')->item(0)->childNodes;
-                        $node[$column] = '';
-                        foreach ($temporary_content_tree as $element) {
-                            $node[$column] .= $element->ownerDocument->saveXML($element);
+                        if(!empty($post->getElementsByTagName('content')->item(0)->childNodes)) {
+                            $temporary_content_tree = $post->getElementsByTagName('html')->item(0)->childNodes;
+                            $node[$column] = '';
+                            foreach ($temporary_content_tree as $element) {
+                                $node[$column] .= $element->ownerDocument->saveXML($element);
+                            }
                         }
                     }
                 }
@@ -194,12 +202,13 @@ function wppo_check_for_po_changes() {
                 /*
                  * Stores in the table the translated version of the page
                  */
-                $table_format = array('%s', '%d', '%s', '%s', '%s');
-                if (!$wpdb->get_row("SELECT wppo_id FROM ".WPPO_PREFIX."posts WHERE post_id = '". mysql_real_escape_string($page_id) ."' AND lang = '". mysql_real_escape_string($lang) ."'")) {
-                    $wpdb->insert(WPPO_PREFIX."posts", $node, $table_format);
+
+                if (!$wpdb->get_row("SELECT wppo_id FROM ".WPPO_PREFIX."posts WHERE post_id = '". mysql_real_escape_string($node['post_id']) ."' AND lang = '". mysql_real_escape_string($lang) ."'")) {
+                    $wpdb->insert(WPPO_PREFIX."posts", $node);
                 } else {
-                    $wpdb->update(WPPO_PREFIX."posts", $node, array('post_id' => $node['post_id'], 'lang' => $lang), $table_format);
+                    $wpdb->update(WPPO_PREFIX."posts", $node, array('post_id' => $node['post_id'], 'lang' => $lang));
                 }
+                
             }
         }
     }
