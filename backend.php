@@ -130,7 +130,6 @@ function wppo_check_for_po_changes() {
                         'lang' => $lang,
                         'post_type' => $post_type,
                         'translation_date' => $last_modified,
-                        'strings_total' => $stats['total'],
                         'strings_translated' => $stats['translated'],
                         'strings_fuzzy' => $stats['fuzzy'],
                         'strings_untranslated' => $stats['untranslated'],
