@@ -23,17 +23,7 @@ License: AGPLv3
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-if (!function_exists('_log')) {
-    function _log( $message ) {
-        if (WP_DEBUG === true) {
-            if ( is_array($message) || is_object($message)) {
-                file_put_contents(ABSPATH.'debug.log', print_r($message, true)."\n", FILE_APPEND);
-            } else {
-                file_put_contents(ABSPATH.'debug.log', $message."\n" , FILE_APPEND);
-            }
-        }
-    }
-}
+
 
 
 /* 
@@ -57,15 +47,21 @@ if (!function_exists('_log')) {
 define('WPPO_DIR', ABSPATH . "wppo/");
 define('WPPO_PREFIX', "wppo_");
 define('WPPO_XML2PO_COMMAND', "/usr/bin/xml2po");
+define('WPPO_ABS_URI', $_SERVER['REQUEST_URI']);
+define('WPPO_HOME_URL', home_url());
 
 $wppo_cache = array();
 
 
 require_once dirname(__FILE__).'/backend.php';
+require_once dirname(__FILE__).'/url.php';
 
 if (is_admin()) {
     require_once dirname(__FILE__).'/admin.php';
 }
+
+
+
 
 /*
  * Install WPPO Plugin
@@ -324,11 +320,15 @@ add_filter('posts_clauses', function($clauses) {
     
     global $wpdb;
     
-    $lang = wppo_get_lang();
+    if (is_search()) {
     
-    if ($lang != 'C') {
-        $clauses['join'] = "LEFT JOIN ".WPPO_PREFIX."posts ON $wpdb->posts.ID = ".WPPO_PREFIX."posts.post_id ".
-                           "AND ".WPPO_PREFIX."posts.lang = '".mysql_real_escape_string($lang)."'";
+        $lang = wppo_get_lang();
+        
+        if ($lang != 'C') {
+            $clauses['join'] = "LEFT JOIN ".WPPO_PREFIX."posts ON $wpdb->posts.ID = ".WPPO_PREFIX."posts.post_id ".
+                               "AND ".WPPO_PREFIX."posts.lang = '".mysql_real_escape_string($lang)."'";
+        }
+    
     }
     
     return $clauses;
@@ -342,17 +342,23 @@ add_filter('posts_clauses', function($clauses) {
 
 function wppo_get_lang() {
     
-    global $wpdb, $wppo_cache;
-    
+    global $wpdb, $wppo_cache, $wp_query;
+
     
     if (isset($wppo_cache['lang'])) {
-        
         return $wppo_cache['lang'];
+    }
+
+    $lang_uri = wppo_find_lang_in_uri();
         
-    } elseif (isset($_REQUEST['lang'])) {
+    if (isset($lang_uri)) {
         
-        $defined_lang = $_REQUEST['lang'];
+        $defined_lang = $lang_uri;
         
+    } elseif (isset($wp_query->query_vars['lang'])) {
+        
+        $defined_lang = $wp_query->query_vars['lang'];
+    
     } elseif (isset($_SESSION['lang'])) {
         
         $defined_lang = $_SESSION['lang'];
@@ -360,6 +366,11 @@ function wppo_get_lang() {
     }
     
     if (isset($defined_lang)) {
+        
+        if (strpos($defined_lang, '-') !== false) {
+            $defined_lang_array = explode('-', $defined_lang);
+            $defined_lang = $defined_lang_array[0].'_'.strtoupper($defined_lang_array[1]);
+        }
         
         /*
          * Verify if the selected language really exists
@@ -466,24 +477,25 @@ function wppo_get_lang() {
  * to redefine the contant.
  * 
  */
-if (is_admin() && defined('WPLANG') && !function_exists('runkit_constant_redefine')) {
+
+if (is_admin() && defined('WPLANG')) {
     add_action('admin_notices', function() {
         echo "<div class=\"updated fade\"><p>Please comment line <code>define('WPLANG', '');</code> in wp-config.php to make WPPO Plugin work correctly.</p></div>";
     }); 
 }
 
-/*
- * Define default language for WordPress template
- */
-if (wppo_get_lang() != 'C') {
-    if(!defined('WPLANG') && !function_exists('runkit_constant_redefine')) {
-        define('WPLANG', wppo_get_lang());
+
+add_action('setup_theme', function() {
+    /*
+     * Define default language for WordPress template
+     */
+    if (wppo_get_lang() != 'C') {
+        if(!defined('WPLANG')) {
+            define('WPLANG', wppo_get_lang());
+        }
     }
     
-    if(function_exists('runkit_constant_redefine')) {
-        runkit_constant_redefine('WPLANG', wppo_get_lang());
-    }
-}
+});
 
 
 /*
@@ -518,6 +530,4 @@ function wppo_get_translated_data($string, $id = null) {
         return $p->{str_replace("translated_", "post_", $string)};
     }
 }
-
-?>
 
