@@ -13,6 +13,8 @@ add_action('parse_request', function($request) {
 
 add_action('set_lang_request', 'wppo_remove_lang_from_request_uri');
 
+do_action('set_lang_request');
+
 
 /*
  * This is an utility function that returns the language regex,
@@ -64,6 +66,7 @@ function wppo_find_lang_in_uri() {
     preg_match($lang_rule, $req_uri, $matches);
     
     return (count($matches)) ? trim($matches[0], '/') : null;
+    
 }
 
 function wppo_remove_lang_from_request_uri() {
@@ -218,85 +221,7 @@ add_filter('body_class', function($classes) {
 });
 
 
-/*add_filter('generate_rewrite_rules', function($rules) {
-    print_r($rules);
-    die;
-    
-    $lang_rule = "([a-z\-]{2,5})/";
-    
-    $new_rules = array();
-    foreach($rules as $regex => $url) {
-        $regex = $lang_rule.$regex;
-        $url = str_replace(array('[1]', '[2]', '[3]'), array('[2]', '[3]', '[4]'), $url);
-        $url = $url.'&lang=$matches[1]';
-        $new_rules[$regex] = $url;
-    }
-    
-    //print_r($new_rules);
-    //return $new_rules;
-    
-    die;
-});
-*/
-
-
-/*
-add_filter('rewrite_rules_array', function($rules) {
-    
-    $new_rules = array();
-    
-    $lang_rule = '([a-z-]{2,5})';
-    
-    // Home page
-    $new_rules[$lang_rule.'/?$'] = 'index.php?lang=$matches[1]';
-    
-    foreach($rules as $regex => $url) {
-        
-        if (strpos($regex, '/?$') !== false) {
-            
-            $new_regex = $lang_rule.'/'.$regex;
-            
-            $new_url = preg_replace_callback('/\[(\d{1,2})\]/', function($match) {
-                return "[".($match[1]+1)."]";
-            }, $url);
-            
-            $new_url = $url.'&lang=$matches[1]';
-            
-            $new_rules[$new_regex] = $new_url;
-            $new_rules[$regex] = $url;
-        }
-        
-    }
-    
-    //$new_rules[] 'index.php?pagename=$matches2&lang=$matches[1]';
-    
-    //$lang_rule = "([a-z]{2}_[A-Z]{2})";
-    //$lang_rule = "([a-z-]{2,5})/?$";
-    //$new_rules[$lang_rule] = 'index.php?lang=$matches[1]';
-    
-    //$new_rules['([a-z-]{2,5})'.'/' .'([0-9]{4})/?$'] = 'index.php?year=$matches[2]' . '&lang=$matches[1]';
-    //$new_rules['[(.+?)(/[([a-z]{2}_[A-Z]{2})]+)?/?$]'] = 'index.php?pagename=$matches[1]&lang=$matches[2]';
-    
-    
-    //echo '<pre>';
-    //print_r($new_rules + $rules);
-    //echo '</pre>';
-    
-    //die;
-    return $new_rules;
-    //return $new_rules + $rules;
-});
-*/
-
-/*
-add_filter('page_link', function($link) {
-    //var_dump($link);
-    //die;
-});
-*/
-
-
-add_filter('home_url',              'wppo_rewrite_permalinks', 10, 2);
+add_filter('home_url', 'wppo_rewrite_permalinks', 10, 2);
 
 function wppo_rewrite_permalinks($permalink, $path) {
     
@@ -307,10 +232,12 @@ function wppo_rewrite_permalinks($permalink, $path) {
         return $permalink;
     }
     
-    $common_url = '://'.$_SERVER['HTTP_HOST'].'/'.$uri_vars['home_path'].'/';
+    if ($uri_vars['home_path'] != '') {
+        $common_url = '://'.$_SERVER['HTTP_HOST'].'/'.$uri_vars['home_path'].'/';
+    } else {
+        $common_url = '://'.$_SERVER['HTTP_HOST'].'/';
+    }
     
     return str_replace($common_url, $common_url.$lang.'/', $permalink);
+    
 }
-
-
-do_action('set_lang_request');
