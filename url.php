@@ -142,7 +142,7 @@ function wppo_remove_lang_from_request_uri() {
      * 
      */
     if (preg_match($lang_rule, $req_uri)) {
-        $_SERVER['REQUEST_URI'] = str_replace('//', '/', '/' .$home_path . '/') . trim(preg_replace($lang_rule, '', $req_uri), '/') . $extra_queries;
+        $_SERVER['REQUEST_URI'] = '/' .$home_path . '/' . trim(preg_replace($lang_rule, '', $req_uri), '/') . $extra_queries;
     }
     
 }
@@ -158,7 +158,7 @@ function wppo_remove_lang_from_request_uri() {
 function add_lang_to_uri($url) {
     
     $lang = wppo_get_lang();
-        
+            
     if($lang != 'C') {
         
         $old_url = $url;
@@ -181,20 +181,18 @@ function add_lang_to_uri($url) {
         $url = explode($uri_vars['home_path'], $url);
         unset($url[0]);
         $url = implode($uri_vars['home_path'], $url);
-        
-        
+                
         /*
          * Constructs the new absolute URL with the initial part
          * of the original one
          */
         $before_url = substr($old_url, 0, (strlen($old_url) - strlen($url)));
-        
-        
+                
         // Checks if language is already part of the path
         if (substr($old_url, strlen($before_url)+1, strlen($lang)) != $lang) {
             $url = '/'.$lang.$url;
         }
-        
+                
         $url = $before_url . $url;
         
     }
@@ -205,19 +203,23 @@ function add_lang_to_uri($url) {
 
 add_filter('redirect_canonical', function($absolute_uri) {
     
-    $parsed_absolute_url = add_lang_to_uri($absolute_uri);
+    $scheme = explode('://', $absolute_uri);
+    $scheme = $scheme[0];
     
-    $uri_reference = substr($parsed_absolute_url, (strlen($parsed_absolute_url) - strlen(WPPO_ABS_URI)), strlen($parsed_absolute_url));
+    $requested_uri = $scheme.'://'.$_SERVER['HTTP_HOST'].WPPO_ABS_URI;
+    
+    $parsed_absolute_url = add_lang_to_uri($absolute_uri);
     
     /* 
      * We won't tell Canonical API to redirect to the same URL
      * originally received because infinite loops are bad.
+     * Really bad.
      */
-    if($uri_reference == WPPO_ABS_URI) {
+    if($parsed_absolute_url == $requested_uri) {
         return false;
     }
     
-    return $uri_reference;
+    return $parsed_absolute_url;
     
 });
 
