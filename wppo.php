@@ -273,22 +273,26 @@ add_filter('wp_get_nav_menu_items', function($items) {
     foreach ($items as $index => $item) {
         
         $post_id = get_post_meta($item->ID, '_menu_item_object_id');
-        $post_id = $post_id[0];
+        
+        if (isset($post_id[0])) {
             
-        if ($post_id != $item->ID) {
+            $post_id = $post_id[0];
             
-            if (!isset($wppo_cache['posts'][$post_id]) && $lang != 'C') {
-                $wppo_cache['posts'][$post_id] = $wpdb->get_row("SELECT * FROM " . WPPO_PREFIX . "posts ".
-                                                                "WHERE post_id = '" . mysql_real_escape_string($post_id) . "' ".
-                                                                "AND lang = '" . mysql_real_escape_string($lang) . "'", ARRAY_A);
-            }
-            
-            if (isset($wppo_cache['posts'][$post_id]) && is_array($wppo_cache['posts'][$post_id])) {
-                  $items[$index]->post_title   = $wppo_cache['posts'][$post_id]['translated_title'];
-                  $items[$index]->title        = $wppo_cache['posts'][$post_id]['translated_title'];
-                  $items[$index]->post_name    = $wppo_cache['posts'][$post_id]['translated_name'];
-                  $items[$index]->post_content = $wppo_cache['posts'][$post_id]['translated_content'];
-                  $items[$index]->post_excerpt = $wppo_cache['posts'][$post_id]['translated_excerpt'];
+            if ($post_id != $item->ID) {
+                
+                if (!isset($wppo_cache['posts'][$post_id]) && $lang != 'C') {
+                    $wppo_cache['posts'][$post_id] = $wpdb->get_row("SELECT * FROM " . WPPO_PREFIX . "posts ".
+                                                                    "WHERE post_id = '" . mysql_real_escape_string($post_id) . "' ".
+                                                                    "AND lang = '" . mysql_real_escape_string($lang) . "'", ARRAY_A);
+                }
+                
+                if (isset($wppo_cache['posts'][$post_id]) && is_array($wppo_cache['posts'][$post_id])) {
+                      $items[$index]->post_title   = $wppo_cache['posts'][$post_id]['translated_title'];
+                      $items[$index]->title        = $wppo_cache['posts'][$post_id]['translated_title'];
+                      $items[$index]->post_name    = $wppo_cache['posts'][$post_id]['translated_name'];
+                      $items[$index]->post_content = $wppo_cache['posts'][$post_id]['translated_content'];
+                      $items[$index]->post_excerpt = $wppo_cache['posts'][$post_id]['translated_excerpt'];
+                }
             }
         }
         
