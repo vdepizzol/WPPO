@@ -44,8 +44,9 @@ License: AGPLv3
  * 
  */
 
+global $wpdb;
 define('WPPO_DIR', ABSPATH . "wppo/");
-define('WPPO_PREFIX', "wppo_");
+define('WPPO_PREFIX', $wpdb->prefix."wppo_");
 define('WPPO_XML2PO_COMMAND', "/usr/bin/xml2po");
 define('WPPO_ABS_URI', $_SERVER['REQUEST_URI']);
 define('WPPO_HOME_URL', home_url());
@@ -98,9 +99,9 @@ function wppo_install() {
                                   `lang` varchar(10) NOT NULL,
                                   `post_type` varchar(10) NOT NULL,
                                   `translation_date` int(10) NOT NULL,
-                                  `strings_translated` double NOT NULL,
-                                  `strings_fuzzy` double NOT NULL,
-                                  `strings_untranslated` double NOT NULL
+                                  `translated` double NOT NULL,
+                                  `fuzzy` double NOT NULL,
+                                  `untranslated` double NOT NULL
                                 ) ENGINE=MYISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;"
     );
     
@@ -405,7 +406,7 @@ function wppo_get_lang() {
 
                 if (count($lang_parse[1])) {
                     $langs = array_combine($lang_parse[1], $lang_parse[4]);
-                	
+                    
                     foreach ($langs as $lang => $val) {
                         if ($val === '') {
                             $langs[$lang] = 1;
