@@ -184,7 +184,7 @@ add_action('admin_menu', function() {
          
         if(isset($_GET['lang_code']) && isset($_GET['lang_status']))
         {
-            $wpdb->update('wppo_languages', array( 'lang_status' => ($_GET['lang_status'] == 1) ? 'visible' : 'hidden'), array( 'lang_code' => $_GET['lang_code'] ));
+            $wpdb->update(WPPO_PREFIX.'languages', array( 'lang_status' => ($_GET['lang_status'] == 1) ? 'visible' : 'hidden'), array( 'lang_code' => $_GET['lang_code'] ));
         }
         
         /*
@@ -192,12 +192,12 @@ add_action('admin_menu', function() {
          */
         $languages = $wpdb->get_results("SELECT langs.*, ".
                                         "(SELECT ROUND(((log1.translated+log2.translated)/(log1.translated+log2.translated+log1.untranslated+log2.untranslated+log1.fuzzy+log2.fuzzy))*100) ".
-                                        "FROM wppo_translation_log log1, wppo_translation_log log2 ".
+                                        "FROM ".WPPO_PREFIX."translation_log log1, ".WPPO_PREFIX."translation_log log2 ".
                                         "WHERE log1.lang = langs.lang_code AND log2.lang = langs.lang_code AND ".
                                         "log1.post_type = 'posts' AND log2.post_type = 'pages' ".
                                         "ORDER BY log1.translation_date DESC, log2.translation_date DESC ".
                                         "LIMIT 1) AS percent ".
-                                        "FROM wppo_languages langs ORDER BY lang_name ASC");
+                                        "FROM ".WPPO_PREFIX."languages langs ORDER BY lang_name ASC");
         
         echo wppo_tpl_parser('admin/wppo', array('grouped_posts' => $grouped_posts, 'languages' => $languages)); 
         
