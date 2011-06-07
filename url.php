@@ -57,7 +57,7 @@ function wppo_get_absolute_uri_vars() {
 }
 
 function wppo_find_lang_in_uri() {
-    
+
     // $lang_rule, $req_uri, $home_path
     extract(wppo_get_absolute_uri_vars());
     
@@ -65,8 +65,22 @@ function wppo_find_lang_in_uri() {
     
     preg_match($lang_rule, $req_uri, $matches);
     
-    return (count($matches)) ? trim($matches[0], '/') : null;
-    
+    if (count($matches)) {
+        return trim($matches[0], '/');
+    } else {
+        /*
+         * If we don't get the language pattern, we'll check if the lang
+         * is available as a query string
+         */
+        $query_string = parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY);
+        parse_str($query_string);
+        if (isset($lang)) {
+            return $lang;
+        }
+        
+        return null;
+    }
+
 }
 
 function wppo_remove_lang_from_request_uri() {
@@ -224,20 +238,35 @@ add_filter('body_class', function($classes) {
 add_filter('home_url', 'wppo_rewrite_permalinks', 10, 2);
 
 function wppo_rewrite_permalinks($permalink, $path) {
-    
-    $uri_vars = wppo_get_absolute_uri_vars();
-    
+
     $lang = strtolower(str_replace("_", "-", wppo_get_lang()));
     if($lang == 'c') {
         return $permalink;
     }
+
+    global $wp_rewrite;
     
-    if ($uri_vars['home_path'] != '') {
-        $common_url = '://'.$_SERVER['HTTP_HOST'].'/'.$uri_vars['home_path'].'/';
+    if ($wp_rewrite->using_permalinks()) {
+    
+        $uri_vars = wppo_get_absolute_uri_vars();
+        
+        if ($uri_vars['home_path'] != '') {
+            $common_url = '://'.$_SERVER['HTTP_HOST'].'/'.$uri_vars['home_path'].'/';
+        } else {
+            $common_url = '://'.$_SERVER['HTTP_HOST'].'/';
+        }
+        
+        return str_replace($common_url, $common_url.$lang.'/', $permalink);
+
     } else {
-        $common_url = '://'.$_SERVER['HTTP_HOST'].'/';
+
+        if (strpos($permalink, '?') === false) {
+            $glue = '?';
+        } else {
+            $glue = '&';
+        }
+
+        return $permalink.$glue.'lang='.$lang;
+        
     }
-    
-    return str_replace($common_url, $common_url.$lang.'/', $permalink);
-    
 }
