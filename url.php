@@ -128,7 +128,7 @@ function wppo_remove_lang_from_request_uri() {
      * 
      */
     if (preg_match($lang_rule, $req_uri)) {
-        $_SERVER['REQUEST_URI'] = '/' .$home_path . '/' . trim(preg_replace($lang_rule, '', $req_uri), '/') . $extra_queries;
+        $_SERVER['REQUEST_URI'] = str_replace('//', '/', '/' .$home_path . '/') . trim(preg_replace($lang_rule, '', $req_uri), '/') . $extra_queries;
     }
     
 }
