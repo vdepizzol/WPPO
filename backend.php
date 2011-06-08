@@ -134,9 +134,9 @@ function wppo_check_for_po_changes() {
                         'lang' => $lang,
                         'post_type' => $post_type,
                         'translation_date' => $last_modified,
-                        'strings_translated' => $stats['translated'],
-                        'strings_fuzzy' => $stats['fuzzy'],
-                        'strings_untranslated' => $stats['untranslated'],
+                        'translated' => $stats['translated'],
+                        'fuzzy' => $stats['fuzzy'],
+                        'untranslated' => $stats['untranslated'],
                     ),
                     array('%s', '%s', '%d', '%d', '%d', '%d', '%d')
                 );
@@ -175,7 +175,6 @@ function wppo_check_for_po_changes() {
                 '_id' => 'post_id',
                 'title' => 'translated_title',
                 'excerpt' => 'translated_excerpt',
-                'name' => 'translated_name',
                 'content' => 'translated_content'
             );
             
@@ -337,7 +336,6 @@ function wppo_generate_po_xml($post_type) {
                 '_id' => 'ID',
                 'title' => 'post_title',
                 'excerpt' => 'post_excerpt',
-                'name' => 'post_name',
                 'content' => 'post_content',
             );
             

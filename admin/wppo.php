@@ -2,7 +2,10 @@
     <div id="icon-edit-pages" class="icon32"><br /></div>
     <h2>Translations</h2>
     
-    <p><a style="float:right;" class="button rbutton" href="?page=wppo&generate=1">Generate POT file</a> <br style="clear:both;" /></p>
+    <p style="text-align: right;">
+        <a class="button rbutton" href="?page=wppo&checkforlangupdates=1">Check for language updates</a>
+        <a class="button rbutton" href="?page=wppo&generatepot=1">Generate POT file</a> <br style="clear:both;" />
+    </p>
     
     <div class="metabox-holder">
         <div class="postbox">

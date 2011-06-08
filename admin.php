@@ -66,6 +66,26 @@ function wppo_is_first_revision($id) {
 
 add_action('admin_menu', function() {
     
+    global $wppo_update_message;
+    
+    if(isset($_GET['generatepot']) && $_GET['generatepot']) {
+        wppo_update_pot();
+        update_option('wppo_last_pot_generate', time());
+        $wppo_update_message = 'POT file generated!';
+    }
+    
+    if(isset($_GET['checkforlangupdates']) && $_GET['checkforlangupdates']) {
+        wppo_check_for_po_changes();
+        $wppo_update_message = 'Checked for language updates.';
+    }
+    
+    if (isset($wppo_update_message) && $wppo_update_message != '') {
+        add_action('admin_notices', function() {
+            global $wppo_update_message;
+            echo "<div class=\"updated fade\"><p>".$wppo_update_message."</p></div>";
+        });
+    }
+    
     add_menu_page('Translations', 'Translations', 'manage_options', 'wppo', function() {
         
         global $wpdb;
@@ -172,11 +192,6 @@ add_action('admin_menu', function() {
             
         }
         
-        if(isset($_GET['generate']) && $_GET['generate'])
-        {
-            wppo_update_pot();
-            update_option('wppo_last_pot_generate', time()); 
-        }
         
         /*
          * Enables or disables the language
@@ -191,20 +206,15 @@ add_action('admin_menu', function() {
          * Load the languages ​​and the percentage translated of each
          */
         $languages = $wpdb->get_results("SELECT langs.*, ".
-                                        "(SELECT ROUND(((log1.translated+log2.translated)/(log1.translated+log2.translated+log1.untranslated+log2.untranslated+log1.fuzzy+log2.fuzzy))*100) ".
-                                        "FROM ".WPPO_PREFIX."translation_log log1, ".WPPO_PREFIX."translation_log log2 ".
-                                        "WHERE log1.lang = langs.lang_code AND log2.lang = langs.lang_code AND ".
-                                        "log1.post_type = 'dynamic' AND log2.post_type = 'static' ".
-                                        "ORDER BY log1.translation_date DESC, log2.translation_date DESC ".
-                                        "LIMIT 1) AS percent ".
+                                            "(SELECT ROUND(((log1.translated+log2.translated)/(log1.translated+log2.translated+log1.untranslated+log2.untranslated+log1.fuzzy+log2.fuzzy))*100) ".
+                                            "FROM ".WPPO_PREFIX."translation_log log1, ".WPPO_PREFIX."translation_log log2 ".
+                                            "WHERE log1.lang = langs.lang_code AND log2.lang = langs.lang_code AND ".
+                                            "log1.post_type = 'dynamic' AND log2.post_type = 'static' ".
+                                            "ORDER BY log1.translation_date DESC, log2.translation_date DESC ".
+                                            "LIMIT 1) AS percent ".
                                         "FROM ".WPPO_PREFIX."languages langs ORDER BY lang_name ASC");
         
         echo wppo_tpl_parser('admin/wppo', array('grouped_posts' => $grouped_posts, 'languages' => $languages)); 
         
-    });
-    
-    /*add_action('admin_notices', function() {
-        echo "<div class=\"updated fade\"><p>WPPO is active!</p></div>";
-    }); */
-    
+    });    
 });
