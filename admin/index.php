@@ -5,10 +5,6 @@
         <a class="button add-new-h2" href="?page=wppo&checkforlangupdates=1">Check for translation updates</a>
     </h2>
     
-    <p>
-        <a style="float: right;" class="button rbutton" href="?page=wppo&generatepot=1">Generate POT file</a> <br style="clear:both;" />
-    </p>
-    
     <div class="metabox-holder" style="width: 60%; float: left;">
         <div class="postbox">
             <h3>Recent activities</h3>
@@ -34,7 +30,10 @@
                         background: #fef9d0;
                     }
                     .wppo-recent-activities li.last-pot-update {
-                        background: #fdf3a3 !important;
+                        background: #fbcdcd !important;
+                    }
+                    .wppo-recent-activities li.last-pot-update.ok {
+                        background: #daf6bf !important;
                     }
                     .wppo-recent-activities li:nth-child(odd) {
                         background: #f9f9f9;
@@ -43,11 +42,11 @@
                 <ul class="wppo-recent-activities">
                     <?php
                     $showed = false;
-                    foreach($grouped_posts as $group): ?>
+                    foreach($grouped_posts as $i => $group): ?>
                     <?php if($group[0]->post_modified_gmt < date("Y-m-d H:i:s", get_option('wppo_last_pot_generate')) && !$showed):
                     $showed = true;
                     ?> 
-                    <li class="last-pot-update"><span class="date" title="<?php echo date('Y/m/d H:m:i', get_option('wppo_last_pot_generate')); ?>"><?php echo date('Y/m/d', get_option('wppo_last_pot_generate')); ?></span>Changes were sent to translators <a class="button" href="?page=wppo&generatepot=1">Send changes to translators</a></li>
+                    <li class="last-pot-update<?php if($i == 0) echo ' ok';?>"><span class="date" title="<?php echo date('Y/m/d H:m:i', get_option('wppo_last_pot_generate')); ?>"><?php echo date('Y/m/d', get_option('wppo_last_pot_generate')); ?></span>Last time changes were sent to translators <a class="button" href="?page=wppo&generatepot=1">Send again</a></li>
                     <?php endif; ?>
                     <li<?php if (!$showed) echo ' class="uncommited"'; ?>>
                         <span class="date" title="<?php echo $group[0]->post_modified_gmt; ?>"><?php echo $group[0]->date; ?></span><?php echo $group[0]->type; ?> <a href="<?php echo $group[0]->link; ?>"><?php echo get_the_title($group[0]->post_parent); ?></a> <?php echo $group[0]->by; ?>
@@ -55,7 +54,7 @@
                     <?php endforeach; ?>
                     
                     <?php if (!$showed): ?>
-                    <li class="last-pot-update"><span class="date"><?php echo date('Y/m/d', get_option('wppo_last_pot_generate')); ?></span>Last time changes were sent to translators <a class="button" href="?page=wppo&generatepot=1">Send changes to translators</a></li>
+                    <li class="last-pot-update"><span class="date" title="<?php echo date('Y/m/d H:m:i', get_option('wppo_last_pot_generate')); ?>"><?php echo date('Y/m/d', get_option('wppo_last_pot_generate')); ?></span>Last time changes were sent to translators <a class="button" href="?page=wppo&generatepot=1">Send again</a></li>
                     <?php endif; ?>
                 </ul>
     

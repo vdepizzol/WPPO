@@ -66,24 +66,46 @@ function wppo_is_first_revision($id) {
 
 add_action('admin_menu', function() {
     
-    global $wppo_update_message;
+    global $wpdb, $wppo_update_message;
+    
+    /*
+     * Admin actions
+     */
     
     if(isset($_GET['generatepot']) && $_GET['generatepot']) {
         wppo_update_pot();
         update_option('wppo_last_pot_generate', time());
-        $wppo_update_message = 'POT file generated!';
+        $wppo_update_message = 'Changes successfully sent to translators.';
     }
     
     if(isset($_GET['checkforlangupdates']) && $_GET['checkforlangupdates']) {
         $number_of_changed_po_files = wppo_check_for_po_changes();
         
         if ($number_of_changed_po_files == 0) {
-            $wppo_update_message = 'No new translation detected.';
+            $wppo_update_message = 'No new translation found.';
         } elseif ($number_of_changed_po_files === 1) {
             $wppo_update_message = $number_of_changed_po_files . ' translation file updated.';
         } else {
             $wppo_update_message = $number_of_changed_po_files . ' translation files updated.';
         }
+    }
+    
+    /*
+     * Enables or disables the language
+     */
+     
+    if (isset($_GET['lang_code']) && isset($_GET['lang_status']))
+    {
+        $wpdb->update(WPPO_PREFIX.'languages', array( 'lang_status' => ($_GET['lang_status'] == 1) ? 'visible' : 'hidden'), array( 'lang_code' => $_GET['lang_code'] ));
+        
+        $lang_name = $wpdb->get_var('SELECT lang_name FROM '.WPPO_PREFIX.'languages WHERE lang_code = \''.mysql_real_escape_string($_GET['lang_code'])."'");
+        
+        if ($_GET['lang_status'] == '0') {
+            $wppo_update_message = $lang_name.' disabled.';
+        } else {
+            $wppo_update_message = $lang_name.' enabled.';
+        }
+        
     }
     
     if (isset($wppo_update_message) && $wppo_update_message != '') {
@@ -224,15 +246,6 @@ add_action('admin_menu', function() {
             
         }
         
-        
-        /*
-         * Enables or disables the language
-         */
-         
-        if(isset($_GET['lang_code']) && isset($_GET['lang_status']))
-        {
-            $wpdb->update(WPPO_PREFIX.'languages', array( 'lang_status' => ($_GET['lang_status'] == 1) ? 'visible' : 'hidden'), array( 'lang_code' => $_GET['lang_code'] ));
-        }
         
         /*
          * Load the languages ​​and the percentage translated of each
