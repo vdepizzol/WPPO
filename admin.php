@@ -80,9 +80,9 @@ add_action('admin_menu', function() {
         if ($number_of_changed_po_files == 0) {
             $wppo_update_message = 'No new translation detected.';
         } elseif ($number_of_changed_po_files === 1) {
-            $wppo_update_message = $number_of_changed_po_files . ' file updated.';
+            $wppo_update_message = $number_of_changed_po_files . ' translation file updated.';
         } else {
-            $wppo_update_message = $number_of_changed_po_files . ' files updated.';
+            $wppo_update_message = $number_of_changed_po_files . ' translation files updated.';
         }
     }
     
@@ -121,13 +121,36 @@ add_action('admin_menu', function() {
         
         $last_post = array();
         
+        $last_pot_generation_date = date("Y-m-d H:i:s", get_option('wppo_last_pot_generate'));
+        
         foreach ($posts as $post) {
             
             if (empty($post->post_parent)) {
                 $post->post_parent = $post->ID;
             }
             
-            if (isset($last_post->post_parent) && $last_post->post_parent == $post->post_parent) {
+            /*
+             * This verifies if we should group posts that have a POT generation between them
+             * 
+             * For example, if a page is edited 4 times and after 3 editions the
+             * POT file was regenerated, we will group the 3 editions and the last
+             * one will be separated, as there will be a "pot edition" item in the list.
+             * 
+             */
+            if (
+                isset($last_post->post_modified_gmt) && isset($post->post_modified_gmt) &&
+                (
+                    ($last_post->post_modified_gmt > $last_pot_generation_date && $post->post_modified_gmt > $last_pot_generation_date)
+                    ||
+                    ($last_post->post_modified_gmt < $last_pot_generation_date && $post->post_modified_gmt < $last_pot_generation_date)
+                )
+            ) {
+                $pot_generation_separate = false;
+            } else {
+                $pot_generation_separate = true;
+            }
+            
+            if (isset($last_post->post_parent) && $last_post->post_parent == $post->post_parent && $pot_generation_separate == false) {
                 $grouped_posts[ count($grouped_posts)-1 ][] = $post;
             } else {
                 $grouped_posts[][] = $post;

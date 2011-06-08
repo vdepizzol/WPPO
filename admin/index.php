@@ -16,7 +16,7 @@
                 <style type="text/css">
                     .wppo-recent-activities li {
                         margin: 0;
-                        padding: 4px 15px;
+                        padding: 5px 15px;
                         border-bottom: 1px solid #d9d9d9;
                     }
                     .wppo-recent-activities li .date {
@@ -47,10 +47,10 @@
                     <?php if($group[0]->post_modified_gmt < date("Y-m-d H:i:s", get_option('wppo_last_pot_generate')) && !$showed):
                     $showed = true;
                     ?> 
-                    <li class="last-pot-update"><span class="date"><?php echo date('Y/m/d', get_option('wppo_last_pot_generate')); ?></span>Changes were sent to translators <a class="button" href="?page=wppo&generatepot=1">Send changes to translators</a></li>
+                    <li class="last-pot-update"><span class="date" title="<?php echo date('Y/m/d H:m:i', get_option('wppo_last_pot_generate')); ?>"><?php echo date('Y/m/d', get_option('wppo_last_pot_generate')); ?></span>Changes were sent to translators <a class="button" href="?page=wppo&generatepot=1">Send changes to translators</a></li>
                     <?php endif; ?>
                     <li<?php if (!$showed) echo ' class="uncommited"'; ?>>
-                        <span class="date"><?php echo $group[0]->date; ?></span><?php echo $group[0]->type; ?> <a href="<?php echo $group[0]->link; ?>"><?php echo get_the_title($group[0]->post_parent); ?></a> <?php echo $group[0]->by; ?>
+                        <span class="date" title="<?php echo $group[0]->post_modified_gmt; ?>"><?php echo $group[0]->date; ?></span><?php echo $group[0]->type; ?> <a href="<?php echo $group[0]->link; ?>"><?php echo get_the_title($group[0]->post_parent); ?></a> <?php echo $group[0]->by; ?>
                     </li>
                     <?php endforeach; ?>
                     
