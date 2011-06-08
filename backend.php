@@ -148,6 +148,10 @@ function wppo_check_for_po_changes() {
         }
     }
     
+    if (count($po_files_needing_update) == 0) {
+        return 0;
+    }
+    
     foreach ($po_files_needing_update as $post_type => $langs) {
         foreach ($langs as $lang) {
             
@@ -235,6 +239,8 @@ function wppo_check_for_po_changes() {
             }
         }
     }
+    
+    return count($po_files_needing_update);
 }
 
 

@@ -75,8 +75,15 @@ add_action('admin_menu', function() {
     }
     
     if(isset($_GET['checkforlangupdates']) && $_GET['checkforlangupdates']) {
-        wppo_check_for_po_changes();
-        $wppo_update_message = 'Checked for language updates.';
+        $number_of_changed_po_files = wppo_check_for_po_changes();
+        
+        if ($number_of_changed_po_files == 0) {
+            $wppo_update_message = 'No new translation detected.';
+        } elseif ($number_of_changed_po_files === 1) {
+            $wppo_update_message = $number_of_changed_po_files . ' file updated.';
+        } else {
+            $wppo_update_message = $number_of_changed_po_files . ' files updated.';
+        }
     }
     
     if (isset($wppo_update_message) && $wppo_update_message != '') {
@@ -103,9 +110,10 @@ add_action('admin_menu', function() {
         $supported_post_types['revision'] = 'revision';
 
         
-        $posts = $wpdb->get_results("SELECT {$wpdb->posts}.ID, {$wpdb->posts}.post_parent, {$wpdb->posts}.post_modified_gmt, display_name as author FROM {$wpdb->posts} ".
+        $posts = $wpdb->get_results("SELECT {$wpdb->posts}.ID, {$wpdb->posts}.post_parent, {$wpdb->posts}.post_modified_gmt, DATE_FORMAT({$wpdb->posts}.post_modified_gmt, '%Y/%m/%d') as date, display_name as author FROM {$wpdb->posts} ".
                                     "LEFT JOIN {$wpdb->users} ON {$wpdb->posts}.post_author = {$wpdb->users}.ID ".
                                     "WHERE post_type IN ('".implode("','", $supported_post_types)."') ".
+                                    "AND {$wpdb->posts}.post_modified_gmt != '0000-00-00 00:00:00' ".
                                     "ORDER BY post_modified_gmt DESC LIMIT 0,30");
         
         
@@ -139,11 +147,11 @@ add_action('admin_menu', function() {
                 
                 if ($first_revision) {
                     $group[0]->link = 'revision.php?action=edit&revision='.$group[0]->ID;
-                    $group[0]->type = 'created ';
+                    $group[0]->type = 'created';
                 } else {
                     $previous_revision = wppo_get_previous_revision($group[0]->ID);
                     $group[0]->link = 'revision.php?action=diff&post_type='.get_post_type($group[0]->post_parent).'&right='.$previous_revision.'&left='.$group[0]->ID;
-                    $group[0]->type = 'edited ';
+                    $group[0]->type = 'edited';
                 }
                 $group[0]->by = ' by '.$group[0]->author;
             } else {
@@ -188,6 +196,7 @@ add_action('admin_menu', function() {
                 }
                 
                 $group[0]->by = $times.' by '.implode(', ', array_unique($temp_post_authors));
+                
             }
             
         }
@@ -214,7 +223,7 @@ add_action('admin_menu', function() {
                                             "LIMIT 1) AS percent ".
                                         "FROM ".WPPO_PREFIX."languages langs ORDER BY lang_name ASC");
         
-        echo wppo_tpl_parser('admin/wppo', array('grouped_posts' => $grouped_posts, 'languages' => $languages)); 
+        echo wppo_tpl_parser('admin/index', array('grouped_posts' => $grouped_posts, 'languages' => $languages)); 
         
     });    
 });
