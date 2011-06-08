@@ -128,7 +128,7 @@ add_action('admin_menu', function() {
             if (!post_type_supports($i, 'revisions')) {
                 unset($supported_post_types[$i]);
             }
-        }                        
+        }
         $supported_post_types['revision'] = 'revision';
 
         
@@ -257,7 +257,7 @@ add_action('admin_menu', function() {
                                             "log1.post_type = 'dynamic' AND log2.post_type = 'static' ".
                                             "ORDER BY log1.translation_date DESC, log2.translation_date DESC ".
                                             "LIMIT 1) AS percent ".
-                                        "FROM ".WPPO_PREFIX."languages langs ORDER BY lang_name ASC");
+                                        "FROM ".WPPO_PREFIX."languages langs ORDER BY percent DESC, lang_name ASC");
         
         echo wppo_tpl_parser('admin/index', array('grouped_posts' => $grouped_posts, 'languages' => $languages)); 
         
