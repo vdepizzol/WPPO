@@ -30,16 +30,16 @@ require_once("poparser.class.php");
  * It should keep a backup somewhere else.
  * 
  */
-function wppo_update_pot($coverage = array('posts', 'pages')) {
+function wppo_update_pot($coverage = array('dynamic', 'static')) {
     
     global $wpdb;
     
     if ($coverage == 'all') {
-        $coverage = array('posts', 'pages');
+        $coverage = array('dynamic', 'static');
     }
     
-    if (is_string($coverage) && $coverage != 'posts' && $coverage != 'pages') {
-        die("First argument of wppo_update_pot() must be \"posts\" or \"pages\" (or an array of both).");
+    if (is_string($coverage) && $coverage != 'dynamic' && $coverage != 'static') {
+        die("First argument of wppo_update_pot() must be \"dynamic\" or \"static\" (or an array of both).");
     }
     
     if (is_string($coverage)) {
@@ -86,7 +86,7 @@ function wppo_check_for_po_changes() {
         // Walk trough post_type folders
         while(false !== ($post_type_item = readdir($post_type_handle))) {
             
-            if (is_dir(WPPO_DIR.$post_type_item) && ($post_type_item == 'posts' || $post_type_item == 'pages')) {
+            if (is_dir(WPPO_DIR.$post_type_item) && ($post_type_item == 'dynamic' || $post_type_item == 'static')) {
                 
                 // Walk trough lang files inside po folder
                 if ($lang_handle = opendir(WPPO_DIR.$post_type_item.'/po/')) {
@@ -169,6 +169,7 @@ function wppo_check_for_po_changes() {
             /*
              * An underline before the tag name means that it is an
              * attribute in the XML tree
+             * (attributes are not translated by xml2po
              */
             $attributes = array(
                 '_id' => 'post_id',
@@ -241,7 +242,7 @@ function wppo_check_for_po_changes() {
 function wppo_generate_po_xml($post_type) {
     global $wpdb;
     
-    if ($post_type != 'pages' && $post_type != 'posts') {
+    if ($post_type != 'static' && $post_type != 'dynamic') {
         return false;
     }
     
@@ -251,7 +252,7 @@ function wppo_generate_po_xml($post_type) {
                 post_status IN ('publish', 'future') AND
                 post_type != 'revision'";
     
-    if ($post_type == 'pages') {
+    if ($post_type == 'static') {
         
         /*
          * Pages must include also some permanent data in the future,
@@ -261,7 +262,7 @@ function wppo_generate_po_xml($post_type) {
         
         $sql .= " AND post_type IN ('page', 'nav_menu_item') ORDER BY post_type ASC";
         
-    } elseif ($post_type == 'posts') {
+    } elseif ($post_type == 'dynamic') {
         
         /*
          * We need to verify how attachments are stored in wp_posts before
@@ -290,7 +291,7 @@ function wppo_generate_po_xml($post_type) {
     $dom->formatOutput = true;
     $root = $dom->createElement("wppo");
     
-    if ($post_type == 'pages') {
+    if ($post_type == 'static') {
         
         /*
          * Support for translated bloginfo strings
@@ -400,6 +401,3 @@ function wppo_generate_po_xml($post_type) {
     
     return $content;
 }
-
-
-?>

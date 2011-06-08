@@ -31,16 +31,16 @@ License: AGPLv3
  * /wppo/[post_type]/[file_type]/[lang].[ext]
  * 
  * Example:
- * /wppo/pages/po/fr.po
- * /wppo/posts/xml/pt_BR.xml
+ * /wppo/static/po/fr.po
+ * /wppo/dynamic/xml/pt_BR.xml
  * 
  * Global POT file:
- * /wppo/posts.pot
- * /wppo/pages.pot
+ * /wppo/dynamic.pot
+ * /wppo/static.pot
  * 
  * Global XML file:
- * /wppo/posts.xml
- * /wppo/pages.xml
+ * /wppo/dynamic.xml
+ * /wppo/static.xml
  * 
  */
 
@@ -116,7 +116,7 @@ function wppo_install() {
     /*
      * Create WPPO directories
      */
-    $directories_for_post_types = array('pages', 'posts');
+    $directories_for_post_types = array('static', 'dynamic');
     $directories_for_formats = array('po', 'xml');
     
     if (!is_dir(WPPO_DIR)) {

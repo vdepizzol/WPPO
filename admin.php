@@ -194,7 +194,7 @@ add_action('admin_menu', function() {
                                         "(SELECT ROUND(((log1.translated+log2.translated)/(log1.translated+log2.translated+log1.untranslated+log2.untranslated+log1.fuzzy+log2.fuzzy))*100) ".
                                         "FROM ".WPPO_PREFIX."translation_log log1, ".WPPO_PREFIX."translation_log log2 ".
                                         "WHERE log1.lang = langs.lang_code AND log2.lang = langs.lang_code AND ".
-                                        "log1.post_type = 'posts' AND log2.post_type = 'pages' ".
+                                        "log1.post_type = 'dynamic' AND log2.post_type = 'static' ".
                                         "ORDER BY log1.translation_date DESC, log2.translation_date DESC ".
                                         "LIMIT 1) AS percent ".
                                         "FROM ".WPPO_PREFIX."languages langs ORDER BY lang_name ASC");
@@ -208,4 +208,3 @@ add_action('admin_menu', function() {
     }); */
     
 });
-
