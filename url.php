@@ -208,7 +208,10 @@ add_filter('wp_nav_menu_items', function($menu_items) {
     return wppo_recreate_links_in_html($menu_items, wppo_get_lang());
 });
 
-
+/*
+ * This function will look for all the links around
+ * any html and test if the link deserves a reconstructed URL
+ */
 function wppo_recreate_links_in_html($html, $lang) {
     
     global $wppo_recreate_links_temp_lang;
@@ -243,9 +246,7 @@ function wppo_recreate_url($url, $lang, $coverage = 'external') {
     if($lang == 'c') {
         return $url;
     }
-    
-    //echo '['.$url.']';
-    
+        
     $uri_vars = wppo_get_absolute_uri_vars();
     
     /*
@@ -370,7 +371,3 @@ function wppo_recreate_url($url, $lang, $coverage = 'external') {
     return $new_url;
     
 }
-
-add_action('setup_theme', function() {
-    //echo wppo_recreate_url("#as5", 'pt-br');
-});
