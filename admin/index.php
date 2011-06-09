@@ -88,6 +88,12 @@
                         display: inline-block;
                         width: 3.8em;
                     }
+                    .wppo-languages-list li .obs {
+                        font-weight: bold;
+                        border-bottom: 1px dotted black;
+                        color: #BC0B0B;
+                        cursor: help;
+                    }
                     .wppo-languages-list li .actions {
                         font-size: 11px;
                         float: right;
@@ -109,7 +115,18 @@
                     </li>
                     <?php foreach($languages as $l): ?>
                     <li>
-                        <span class="lang-code"><code><?php echo $l->lang_code; ?></code></span> <?php echo $l->lang_name; ?> (<?php echo ($l->percent) ? $l->percent : 0; ?>%)
+                        <?php
+                        if($l->lacks_wp_mo && $l->lacks_theme_mo) {
+                            $ps = '<span class="obs" title="WordPress and current theme is not available in this language">*</span>';
+                        } elseif($l->lacks_wp_mo) {
+                            $ps = '<span class="obs" title="WordPress is not available in this language">*</span>';
+                        } elseif($l->lacks_theme_mo) {
+                            $ps = '<span class="obs" title="Current theme is not available in this language">*</span>';
+                        } else {
+                            $ps = '';
+                        }
+                        ?>
+                        <span class="lang-code"><code><?php echo $l->lang_code; ?></code></span> <?php echo $l->lang_name; ?> (<?php echo ($l->percent) ? $l->percent : 0; ?>%) <?php echo $ps;?>
                         <div class="actions">
                             <?php if($l->lang_status == 'hidden'): ?>
                                 <a href="?page=wppo&amp;lang_code=<?php echo $l->lang_code; ?>&amp;action=changelanguagestatus&amp;lang_status=1">Enable</a>

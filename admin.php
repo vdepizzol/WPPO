@@ -379,6 +379,23 @@ add_action('admin_menu', function() {
                                             "ORDER BY log1.translation_date DESC, log2.translation_date DESC ".
                                             "LIMIT 1) AS percent ".
                                         "FROM ".WPPO_PREFIX."languages langs ORDER BY percent DESC, lang_name ASC");
+
+        foreach ($languages as $i => $language) {
+
+            if (!file_exists(ABSPATH.'wp-content/languages/'.$language->lang_code.'.mo')) {
+                $languages[$i]->lacks_wp_mo = true;
+            } else {
+                $languages[$i]->lacks_wp_mo = false;
+            }
+
+
+            if (!file_exists(get_stylesheet_directory().'/languages/'.$language->lang_code.'.mo')) {
+                $languages[$i]->lacks_theme_mo = true;
+            } else {
+                $languages[$i]->lacks_theme_mo = false;
+            }
+            
+        }
         
         echo wppo_tpl_parser('admin/index', array('grouped_posts' => $grouped_posts, 'languages' => $languages)); 
         
