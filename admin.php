@@ -149,8 +149,12 @@ add_action('admin_menu', function() {
             
             // static 
             if ($wpdb->get_var("SELECT lang FROM ".WPPO_PREFIX.'translation_log'." WHERE post_type = 'static' AND lang = '".mysql_real_escape_string($_POST['lang_code'])."'") == null) {
-                
-                $default_status['static'] =  POParser::stats(WPPO_DIR."static.pot");
+
+                if (file_exists(WPPO_DIR."static.pot")) {
+                    $default_status['static'] =  POParser::stats(WPPO_DIR."static.pot");
+                } else {
+                    $default_status['static']['untranslated'] = 0;
+                }
                 
                 $wpdb->insert(WPPO_PREFIX.'translation_log', array('lang' => $_POST['lang_code'],
                                                                    'post_type' => 'static',
@@ -164,7 +168,11 @@ add_action('admin_menu', function() {
             // dynamic
             if ($wpdb->get_var("SELECT lang FROM ".WPPO_PREFIX.'translation_log'." WHERE post_type = 'dynamic' AND lang = '".mysql_real_escape_string($_POST['lang_code'])."'") == null) {
                 
-                $default_status['dynamic'] = POParser::stats(WPPO_DIR."dynamic.pot");
+                if (file_exists(WPPO_DIR."dynamic.pot")) {
+                    $default_status['dynamic'] =  POParser::stats(WPPO_DIR."dynamic.pot");
+                } else {
+                    $default_status['dynamic']['untranslated'] = 0;
+                }
                 
                 $wpdb->insert(WPPO_PREFIX.'translation_log', array('lang' => $_POST['lang_code'],
                                                                    'post_type' => 'dynamic',
@@ -172,6 +180,41 @@ add_action('admin_menu', function() {
                                                                    'translated' => '0',
                                                                    'fuzzy' => '0',
                                                                    'untranslated' => $default_status['dynamic']['untranslated']));
+            }
+
+            /*
+             * We'll try to download WordPress locale based on lang_code
+             */
+
+            $locale_url = "http://svn.automattic.com/wordpress-i18n/";
+
+            if (!file_exists(ABSPATH."wp-content/languages/".$_POST['lang_code'].'.mo')) {
+                
+                $lang_code = $_POST['lang_code'];
+                if (strlen($lang_code) == 5) {
+                    $alt_lang_code = substr($lang_code, 0, 2);
+                } elseif (strlen($lang_code) == 2) {
+                    $alt_lang_code = $lang_code.'_'.strtoupper($lang_code);
+                }
+
+                if(!$open_mo = @fopen($locale_url.$lang_code    .'/tags/'.$GLOBALS['wp_version'].'/messages/'.$lang_code.'.mo', 'r'))
+                if(!$open_mo = @fopen($locale_url.$alt_lang_code.'/tags/'.$GLOBALS['wp_version'].'/messages/'.$alt_lang_code.'.mo', 'r'))
+                if(!$open_mo = @fopen($locale_url.$lang_code    .'/branches/'.$GLOBALS['wp_version'].'/messages/'.$lang_code.'.mo', 'r'))
+                if(!$open_mo = @fopen($locale_url.$alt_lang_code.'/branches/'.$GLOBALS['wp_version'].'/messages/'.$alt_lang_code.'.mo', 'r'))
+                if(!$open_mo = @fopen($locale_url.$lang_code    .'/branches/'.$GLOBALS['wp_version'].'/'.$lang_code.'.mo', 'r'))
+                if(!$open_mo = @fopen($locale_url.$alt_lang_code.'/branches/'.$GLOBALS['wp_version'].'/'.$alt_lang_code.'.mo', 'r'))
+                if(!$open_mo = @fopen($locale_url.$lang_code    .'/trunk/messages/'.$lang_code.'.mo', 'r'))
+                if(!$open_mo = @fopen($locale_url.$alt_lang_code.'/trunk/messages/'.$alt_lang_code.'.mo', 'r')) {
+
+                    $open_mo = false;
+                    
+                }
+
+                if ($open_mo) {
+                    $mo_content = stream_get_contents($open_mo);
+                    file_put_contents(ABSPATH."wp-content/languages/".$lang_code.'.mo', $mo_content);
+                }
+
             }
             
             $wppo_update_message = htmlspecialchars($_POST['lang_name'])." added.";

@@ -138,6 +138,15 @@ function wppo_install() {
     }
     
     foreach ($directories_for_post_types as $directory) {
+
+        if (!file_exists(WPPO_DIR.'/'.$directory.'.xml')) {
+            file_put_contents(WPPO_DIR.'/'.$directory.'.xml', '');
+        }
+
+        if (!file_exists(WPPO_DIR.'/'.$directory.'.pot')) {
+            file_put_contents(WPPO_DIR.'/'.$directory.'.pot', '');
+        }
+        
         if (!is_dir(WPPO_DIR.'/'.$directory)) {
             if (!mkdir(WPPO_DIR.'/'.$directory, 0755)) {
                 die("The plugin tried but couldn't create the directory “".WPPO_DIR.'/'.$directory."”. Please, create it manually with chmod 0755.");
@@ -480,15 +489,17 @@ function wppo_get_lang() {
 /*
  * Since we just can't redefine constants without special php libraries, we need to
  * ask to the admin manually remove it from wp-config.php.
- * 
- * However, if we find runkit_constant_redefine available, we'll try to use it
- * to redefine the contant.
- * 
  */
 
 if (is_admin() && defined('WPLANG')) {
     add_action('admin_notices', function() {
         echo "<div class=\"updated fade\"><p>Please comment line <code>define('WPLANG', '');</code> in wp-config.php to make WPPO Plugin work correctly.</p></div>";
+    }); 
+}
+
+if (is_admin() && (!is_dir(ABSPATH."wp-content/languages") || !is_writable(ABSPATH."wp-content/languages"))) {
+    add_action('admin_notices', function() {
+        echo "<div class=\"updated fade\"><p>Please make <code>/wp-content/languages</code> folder writable.</p></div>";
     }); 
 }
 
