@@ -140,7 +140,40 @@ add_action('admin_menu', function() {
         if (!isset($verify_lang) && $_POST['lang_code'] != WPPO_DEFAULT_LANGUAGE_CODE) {
         
             $wpdb->insert(WPPO_PREFIX.'languages', array('lang_code' => $_POST['lang_code'], 'lang_name' => $_POST['lang_name']), array('%s', '%s'));
-        
+            
+            
+            /*
+             * We need to have at least one registry for statistics
+             * in each post type.
+             */
+            
+            // static 
+            if ($wpdb->get_var("SELECT lang FROM ".WPPO_PREFIX.'translation_log'." WHERE post_type = 'static' AND lang = '".mysql_real_escape_string($_POST['lang_code'])."'") == null) {
+                
+                $default_status['static'] =  POParser::stats(WPPO_DIR."static.pot");
+                
+                $wpdb->insert(WPPO_PREFIX.'translation_log', array('lang' => $_POST['lang_code'],
+                                                                   'post_type' => 'static',
+                                                                   'translation_date' => time(),
+                                                                   'translated' => '0',
+                                                                   'fuzzy' => '0',
+                                                                   'untranslated' => $default_status['static']['untranslated']));
+                                                               
+            }
+            
+            // dynamic
+            if ($wpdb->get_var("SELECT lang FROM ".WPPO_PREFIX.'translation_log'." WHERE post_type = 'dynamic' AND lang = '".mysql_real_escape_string($_POST['lang_code'])."'") == null) {
+                
+                $default_status['dynamic'] = POParser::stats(WPPO_DIR."dynamic.pot");
+                
+                $wpdb->insert(WPPO_PREFIX.'translation_log', array('lang' => $_POST['lang_code'],
+                                                                   'post_type' => 'dynamic',
+                                                                   'translation_date' => time(),
+                                                                   'translated' => '0',
+                                                                   'fuzzy' => '0',
+                                                                   'untranslated' => $default_status['dynamic']['untranslated']));
+            }
+            
             $wppo_update_message = htmlspecialchars($_POST['lang_name'])." added.";
             
         } else {
