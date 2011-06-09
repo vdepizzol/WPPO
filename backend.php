@@ -203,6 +203,9 @@ function wppo_check_for_po_changes() {
                                 foreach ($temporary_content_tree as $element) {
                                     $node[$column] .= $element->ownerDocument->saveXML($element);
                                 }
+                                
+                                // Find all the links and convert to current language
+                                $node[$column] = wppo_recreate_links_in_html($node[$column], $lang);
                             }
                             
                         break;

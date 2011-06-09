@@ -154,61 +154,19 @@ function wppo_remove_lang_from_request_uri() {
  * Before reloading the page with the new URL, we need to check if we 
  * need to put the language in place again.
  * 
+ * 
  */
-function add_lang_to_uri($url) {
-    
-    $lang = wppo_get_lang();
-            
-    if($lang != 'C') {
-        
-        $old_url = $url;
-    
-        $uri_vars = wppo_get_absolute_uri_vars();
-        
-        $lang = strtolower(str_replace('_', '-', $lang));
-        
-        
-        // Removes scheme if it exists
-        $url = explode('://', $url);
-        unset($url[0]);
-        $url = implode('://', $url);
-        
-        // Removes host
-        $url = explode($_SERVER['HTTP_HOST'], $url);
-        $url = $url[1];
-        
-        // Removes home path
-        $url = explode($uri_vars['home_path'], $url);
-        unset($url[0]);
-        $url = implode($uri_vars['home_path'], $url);
-                
-        /*
-         * Constructs the new absolute URL with the initial part
-         * of the original one
-         */
-        $before_url = substr($old_url, 0, (strlen($old_url) - strlen($url)));
-                
-        // Checks if language is already part of the path
-        if (substr($old_url, strlen($before_url)+1, strlen($lang)) != $lang) {
-            $url = '/'.$lang.$url;
-        }
-                
-        $url = $before_url . $url;
-        
-    }
-    
-    return $url;
-}
-
 
 add_filter('redirect_canonical', function($absolute_uri) {
+    
+    $lang = wppo_get_lang();
     
     $scheme = explode('://', $absolute_uri);
     $scheme = $scheme[0];
     
     $requested_uri = $scheme.'://'.$_SERVER['HTTP_HOST'].WPPO_ABS_URI;
     
-    $parsed_absolute_url = add_lang_to_uri($absolute_uri);
+    $parsed_absolute_url = wppo_recreate_url($absolute_uri, $lang, 'internal');
     
     /* 
      * We won't tell Canonical API to redirect to the same URL
@@ -237,38 +195,182 @@ add_filter('body_class', function($classes) {
 });
 
 
-add_filter('home_url', 'wppo_rewrite_permalinks', 10, 2);
+add_filter('home_url', 'wppo_rewrite_permalinks', 10);
 
-function wppo_rewrite_permalinks($permalink, $path) {
+function wppo_rewrite_permalinks($permalink) {    
+    $lang = wppo_get_lang();
+    return wppo_recreate_url($permalink, $lang, 'internal');
+}
 
-    $lang = strtolower(str_replace("_", "-", wppo_get_lang()));
+
+
+add_filter('wp_nav_menu_items', function($menu_items) {
+    return wppo_recreate_links_in_html($menu_items, wppo_get_lang());
+});
+
+
+function wppo_recreate_links_in_html($html, $lang) {
+    
+    global $wppo_recreate_links_temp_lang;
+    $wppo_recreate_links_temp_lang = $lang;
+    
+    $regexp = "<a\s[^>]*href=(\"??)([^\" >]*?)\\1[^>]*>(.*)<\/a>";
+    $output = preg_replace_callback('/'.$regexp.'/siU', 'wppo_recreate_links_preg_replace_callback', $html);
+    
+    unset($wppo_recreate_links_temp_lang);
+    
+    return $output;
+    
+}
+
+function wppo_recreate_links_preg_replace_callback($matches) {
+    
+    global $wppo_recreate_links_temp_lang;
+    $lang = $wppo_recreate_links_temp_lang;
+    
+    $new_url = wppo_recreate_url($matches[2], $lang, 'external');
+    $matches[0] = str_replace($matches[2], $new_url, $matches[0]);
+    return $matches[0];
+}
+
+/*
+ * This is the main function that reconstructs the URL
+ * with desired language.
+ */
+function wppo_recreate_url($url, $lang, $coverage = 'external') {
+    
+    $lang = strtolower(str_replace("_", "-", $lang));
     if($lang == 'c') {
-        return $permalink;
+        return $url;
     }
-
+    
+    //echo '['.$url.']';
+    
+    $uri_vars = wppo_get_absolute_uri_vars();
+    
+    /*
+     * If the URL comes starting with a slash, it means
+     * it is pointing to current domain.
+     */
+    if (substr($url, 0, 1) == '/') {
+        $url = 'http://' . $_SERVER['HTTP_HOST'] . '/'. $url;
+    }
+    
+    if (substr($url, 0, 1) == '#') {
+        return $url;
+    }
+    
+    $old_url = $url;
+    
+    
+    /*
+     * With coverage as "external", we also check
+     * if the link is pointing to another domain.
+     */
+    if ($coverage == 'external') {
+    
+        /*
+         * We're not going to add language support to
+         * links that don't point to our domain :)
+         */
+        
+        if(strpos($url, '://') === false) {
+            return $url;
+        } else {
+            $domain = explode('://', $url);
+            if(strpos($domain[1], '/') !== false) {
+                $domain = explode('/', $domain[1]);
+                $domain = $domain[0];
+            }
+        
+            if ($_SERVER['HTTP_HOST'] != $domain) {
+                return $url;
+            }
+        }
+    }
+    
+    /*
+     * Stores the URL address without the domain and the home path
+     */
+     
+    // Removes scheme if it exists
+    $file_url = explode('://', $url);
+    unset($file_url[0]);
+    $file_url = implode('://', $file_url);
+    
+    // Removes host
+    $file_url = explode($_SERVER['HTTP_HOST'], $file_url);
+    $file_url = $file_url[1];
+    
+    // Removes home path
+    if ($uri_vars['home_path'] != '') {
+        $file_url = explode($uri_vars['home_path'], $file_url);
+        unset($file_url[0]);
+        $file_url = ltrim(implode($uri_vars['home_path'], $file_url), '/');
+    } else {
+        $file_url = ltrim($file_url, '/');
+    }
+    
+    
+    if ($coverage == 'external') {
+        
+        /*
+         * Checks if link is pointing to a file.
+         * If so, we'll not change the link.
+         */
+        
+        if (file_exists(ABSPATH.$file_url) && $file_url != '') {
+            return $url;
+        }
+    
+    }
+    
+    /*
+     * Check if there is already a language prefix in
+     * the informed URL.
+     * If so, keeps the URL intact.
+     */
+    
+    $matches = array();
+    preg_match($uri_vars['lang_rule'], $file_url, $matches);
+    if (count($matches)) {
+        return $url;
+    }
+    
+    /*
+     * After not matching any possible break down,
+     * Apply the changes.
+     */
+    
     global $wp_rewrite;
     
     if ($wp_rewrite->using_permalinks()) {
-    
-        $uri_vars = wppo_get_absolute_uri_vars();
-        
+            
         if ($uri_vars['home_path'] != '') {
             $common_url = '://'.$_SERVER['HTTP_HOST'].'/'.$uri_vars['home_path'].'/';
         } else {
             $common_url = '://'.$_SERVER['HTTP_HOST'].'/';
         }
         
-        return str_replace($common_url, $common_url.$lang.'/', $permalink);
+        $new_url = str_replace($common_url, $common_url.$lang.'/', $url);
 
     } else {
 
-        if (strpos($permalink, '?') === false) {
+        if (strpos($url, '?') === false) {
             $glue = '?';
         } else {
             $glue = '&';
         }
 
-        return $permalink.$glue.'lang='.$lang;
+        $new_url = $url.$glue.'lang='.$lang;
         
     }
+
+    
+    return $new_url;
+    
 }
+
+add_action('setup_theme', function() {
+    //echo wppo_recreate_url("#as5", 'pt-br');
+});

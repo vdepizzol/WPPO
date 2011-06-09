@@ -66,7 +66,7 @@ class POParser
         if (!is_file($filename)) {
             throw new Exception('The specified file does not exist.');
         }
-        if (substr($filename, strrpos($filename, '.')) !== '.po') {
+        if (substr($filename, strrpos($filename, '.')) !== '.po' && substr($filename, strrpos($filename, '.')) !== '.pot') {
             throw new Exception('The specified file is not a PO file.');
         }
 
