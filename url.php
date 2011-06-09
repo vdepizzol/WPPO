@@ -254,7 +254,7 @@ function wppo_recreate_url($url, $lang, $coverage = 'external') {
      * it is pointing to current domain.
      */
     if (substr($url, 0, 1) == '/') {
-        $url = 'http://' . $_SERVER['HTTP_HOST'] . '/'. $url;
+        $url = 'http://' . $_SERVER['HTTP_HOST'] . $url;
     }
     
     if (substr($url, 0, 1) == '#') {
