@@ -82,7 +82,7 @@ add_action('admin_menu', function() {
         $number_of_changed_po_files = wppo_check_for_po_changes();
         
         if ($number_of_changed_po_files == 0) {
-            $wppo_update_message = 'No new translation found.';
+            $wppo_update_message = 'No new translations found.';
         } elseif ($number_of_changed_po_files === 1) {
             $wppo_update_message = $number_of_changed_po_files . ' translation file updated.';
         } else {
