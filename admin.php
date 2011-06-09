@@ -94,8 +94,7 @@ add_action('admin_menu', function() {
      * Enables or disables the language
      */
      
-    if (isset($_GET['lang_code']) && isset($_GET['lang_status']))
-    {
+    if (isset($_GET['action']) && $_GET['action'] == 'changelanguagestatus' && isset($_GET['lang_code']) && isset($_GET['lang_status'])) {
         $wpdb->update(WPPO_PREFIX.'languages', array( 'lang_status' => ($_GET['lang_status'] == 1) ? 'visible' : 'hidden'), array( 'lang_code' => $_GET['lang_code'] ));
         
         $lang_name = $wpdb->get_var('SELECT lang_name FROM '.WPPO_PREFIX.'languages WHERE lang_code = \''.mysql_real_escape_string($_GET['lang_code'])."'");
@@ -107,6 +106,52 @@ add_action('admin_menu', function() {
         }
         
     }
+    
+    /*
+     * Deletes a language
+     */
+    
+    if (isset($_GET['action']) && $_GET['action'] == 'deletelanguage' && isset($_GET['lang_code'])) {
+        
+        $lang_attr = $wpdb->get_row('SELECT lang_code, lang_name FROM '.WPPO_PREFIX.'languages WHERE lang_code = \''.mysql_real_escape_string($_GET['lang_code'])."'");
+        
+        if(isset($lang_attr->lang_code)) {
+        
+            $wpdb->query("DELETE FROM ".WPPO_PREFIX.'languages'." ".
+                         "WHERE lang_code = '".mysql_real_escape_string($_GET['lang_code'])."'");
+        
+            $wppo_update_message = $lang_attr->lang_name . " deleted.";
+            
+        } else {
+            
+            $wppo_update_message = "Language <code>".$_GET['lang_code']."</code> doesn't exists.";
+            
+        }
+    }
+    
+    /*
+     * Add a language
+     */
+    
+    if (isset($_GET['action']) && $_GET['action'] == 'addlanguage' && $_POST['lang_code'] != '' && $_POST['lang_name'] != '') {
+        
+        $verify_lang = $wpdb->get_row('SELECT lang_code FROM '.WPPO_PREFIX.'languages WHERE lang_code = \''.mysql_real_escape_string($_POST['lang_code'])."'");
+        
+        if (!isset($verify_lang) && $_POST['lang_code'] != WPPO_DEFAULT_LANGUAGE_CODE) {
+        
+            $wpdb->insert(WPPO_PREFIX.'languages', array('lang_code' => $_POST['lang_code'], 'lang_name' => $_POST['lang_name']), array('%s', '%s'));
+        
+            $wppo_update_message = htmlspecialchars($_POST['lang_name'])." added.";
+            
+        } else {
+            
+            $wppo_update_message = "Language <code>".$_POST['lang_code']."</code> already exists.";
+            
+        }
+    }
+    
+    
+    
     
     if (isset($wppo_update_message) && $wppo_update_message != '') {
         add_action('admin_notices', function() {

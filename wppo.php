@@ -51,6 +51,9 @@ define('WPPO_XML2PO_COMMAND', "/usr/bin/xml2po");
 define('WPPO_ABS_URI', $_SERVER['REQUEST_URI']);
 define('WPPO_HOME_URL', home_url());
 
+define('WPPO_DEFAULT_LANGUAGE_NAME', 'English');
+define('WPPO_DEFAULT_LANGUAGE_CODE', 'en');
+
 $wppo_cache = array();
 
 
@@ -89,7 +92,7 @@ function wppo_install() {
         'languages' =>          "CREATE TABLE `".WPPO_PREFIX."languages` (
                                   `lang_code` varchar(10) NOT NULL,
                                   `lang_name` varchar(100) NOT NULL,
-                                  `lang_status` enum('visible', 'hidden') NOT NULL,
+                                  `lang_status` enum('visible', 'hidden') NOT NULL DEFAULT 'hidden',
                                   PRIMARY KEY ( `lang_code` )
                                 ) ENGINE=MYISAM DEFAULT CHARSET=latin1 ;",
         

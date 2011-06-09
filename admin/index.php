@@ -84,6 +84,10 @@
                         -webkit-border-radius: 0 0 5px 5px;
                         border-radius: 0 0 5px 5px;
                     }
+                    .wppo-languages-list li .lang-code {
+                        display: inline-block;
+                        width: 3.8em;
+                    }
                     .wppo-languages-list li .actions {
                         font-size: 11px;
                         float: right;
@@ -100,25 +104,76 @@
                 </style>
                 <ul class="wppo-languages-list">
                     <li>
-                        English
+                        <span class="lang-code"><code><?php echo WPPO_DEFAULT_LANGUAGE_CODE; ?></code></span> <?php echo WPPO_DEFAULT_LANGUAGE_NAME; ?>
                         <div class="actions"><em>Default language</em></div>
                     </li>
                     <?php foreach($languages as $l): ?>
                     <li>
-                        <?php echo $l->lang_name; ?> (<?php echo ($l->percent) ? $l->percent : 0; ?>%)
+                        <span class="lang-code"><code><?php echo $l->lang_code; ?></code></span> <?php echo $l->lang_name; ?> (<?php echo ($l->percent) ? $l->percent : 0; ?>%)
                         <div class="actions">
                             <?php if($l->lang_status == 'hidden'): ?>
-                                <a href="?page=wppo&lang_code=<?php echo $l->lang_code; ?>&lang_status=1">Enable</a>
-                                | <a href="?page=wppo&lang_code=<?php echo $l->lang_code; ?>&action=delete" class="delete">Delete</a>
+                                <a href="?page=wppo&amp;lang_code=<?php echo $l->lang_code; ?>&amp;action=changelanguagestatus&amp;lang_status=1">Enable</a>
+                                | <a href="?page=wppo&amp;lang_code=<?php echo $l->lang_code; ?>&amp;action=deletelanguage" class="delete">Delete</a>
                             <?php endif; ?>
                             
                             <?php if($l->lang_status == 'visible'): ?>
-                                <a href="?page=wppo&lang_code=<?php echo $l->lang_code; ?>&lang_status=0">Deactivate</a>
+                                <a href="?page=wppo&amp;lang_code=<?php echo $l->lang_code; ?>&amp;action=changelanguagestatus&amp;lang_status=0">Deactivate</a>
                             <?php endif; ?>
                         </div>
                     </li>
                     <?php endforeach; ?>
                 </ul>
+            </div>
+        </div>
+        
+        <div class="postbox">
+            <h3 style="cursor: default;">Add Language</h3>
+            <style type="text/css">
+                .wppo-add-language {
+                    padding: 12px !important;
+                }
+                .wppo-add-language form {
+                    overflow: hidden;
+                }
+                .wppo-add-language .field {
+                    margin: 0 0 6px;
+                }
+                .wppo-add-language label {
+                    display: inline-block;
+                    padding-right: 6px;
+                    width: 4em;
+                }
+                .wppo-add-language abbr {
+                    border-bottom: 1px dotted black;
+                    cursor: help;
+                }
+                .wppo-add-language input[name="lang_name"] {
+                    margin-right: 12px;
+                }
+                .wppo-add-language input[name="lang_code"] {
+                    width: 4em;
+                }
+                .wppo-add-language .submit-area {
+                    clear: both;
+                    margin-top: 10px;
+                    text-align: right;
+                }
+            </style>
+            <div class="inside wppo-add-language">
+                <form action="?page=wppo&amp;action=addlanguage" method="post">
+                    <div class="howto field">
+                        <label for="lang_name">Name</label>
+                        <input id="lang_name" name="lang_name" type="text" />
+                    </div>
+                    <div class="howto field">
+                        <label for="lang_code">Code</label>
+                        <input id="lang_code" name="lang_code" type="text" />
+                        in <code style="font-style: normal;"><abbr title="ISO 639 two-letter language code (lowercase)">ll</abbr></code> or <code style="font-style: normal;"><abbr title="ISO 639 two-letter language code (lowercase)">ll</abbr>_<abbr title="ISO 3166 two-letter country code (uppercase)">CC</abbr></code> format
+                    </div>
+                    <div class="submit-area">
+                        <input type="submit" value="Add Language" class="button-secondary" />
+                    </div>
+                </form>
             </div>
         </div>
     </div>
