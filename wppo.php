@@ -60,6 +60,7 @@ $wppo_cache = array();
 
 require_once dirname(__FILE__).'/backend.php';
 require_once dirname(__FILE__).'/url.php';
+require_once dirname(__FILE__).'/widget.php';
 
 if (is_admin()) {
     require_once dirname(__FILE__).'/admin.php';
@@ -415,6 +416,13 @@ function wppo_get_lang() {
 
     $wppo_cache['lang'] = WPPO_DEFAULT_LANGUAGE_CODE;
     return WPPO_DEFAULT_LANGUAGE_CODE;
+}
+
+function wppo_get_all_available_langs() {
+    
+    global $wppo_cache;
+    wppo_get_lang();
+    return $wppo_cache['available_lang'];
 }
 
 /*
