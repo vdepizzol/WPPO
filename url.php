@@ -84,6 +84,13 @@ function wppo_find_lang_in_uri() {
 }
 
 function wppo_remove_lang_from_request_uri() {
+
+    global $wppo_cache;
+
+    /*
+     * Create cache of all available languages
+     */
+    wppo_get_lang();
     
     /*
      * $lang_rule, $req_uri, $home_path
@@ -96,10 +103,23 @@ function wppo_remove_lang_from_request_uri() {
      * access
      */
     
-    // We need to check if the language exists
-    // FIXME
     
     $lang = wppo_find_lang_in_uri();
+
+    if (strlen($lang) == 2) {
+        $lang_in_gettext_format = strtolower($lang);
+    } elseif(strlen($lang) == 5) {
+        $lang_in_gettext_format = strtolower(substr($lang, 0, 2)).'_'.strtoupper(substr($lang, 3, 2));
+    } else {
+        $lang_in_gettext_format = WPPO_DEFAULT_LANGUAGE_CODE;
+    }
+    
+    /*
+     * We won't remove lang from request URI if the informed language doesn't exists
+     */
+    if ($lang_in_gettext_format != WPPO_DEFAULT_LANGUAGE_CODE && !array_key_exists($lang_in_gettext_format, $wppo_cache['available_lang'])) {
+        return false;
+    }
     
     /*
      * Group extra queries to put in the right place later
@@ -141,10 +161,26 @@ function wppo_remove_lang_from_request_uri() {
      *      /website_path/about/
      * 
      */
-    if (preg_match($lang_rule, $req_uri)) {
-        $_SERVER['REQUEST_URI'] = '/' .$home_path . '/' . trim(preg_replace($lang_rule, '', $req_uri), '/') . $extra_queries;
-    }
     
+    if (preg_match($lang_rule, $req_uri)) {
+        if($home_path == '') {
+            $_SERVER['REQUEST_URI'] = '/' . trim(preg_replace($lang_rule, '', $req_uri), '/') . $extra_queries;
+        } else {
+            $_SERVER['REQUEST_URI'] = '/' .$home_path . '/' . trim(preg_replace($lang_rule, '', $req_uri), '/') . $extra_queries;
+        }
+    }
+        
+    /*
+     * If the requested lang is the same as the default, we'll redirect
+     * to the page without the language permalink.
+     */
+    if($lang_in_gettext_format == WPPO_DEFAULT_LANGUAGE_CODE && $_SERVER['REQUEST_URI'] != WPPO_ABS_URI) {
+        header("Location: ".WPPO_URI_SCHEME.'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
+        exit;
+    }
+
+    return true;
+
 }
 
 /*
@@ -160,6 +196,10 @@ function wppo_remove_lang_from_request_uri() {
 add_filter('redirect_canonical', function($absolute_uri) {
     
     $lang = wppo_get_lang();
+
+    if ($lang == WPPO_DEFAULT_LANGUAGE_CODE) {
+        return $absolute_uri;
+    }
     
     $scheme = explode('://', $absolute_uri);
     $scheme = $scheme[0];
@@ -243,7 +283,7 @@ function wppo_recreate_links_preg_replace_callback($matches) {
 function wppo_recreate_url($url, $lang, $coverage = 'external') {
     
     $lang = strtolower(str_replace("_", "-", $lang));
-    if($lang == 'c') {
+    if($lang == WPPO_DEFAULT_LANGUAGE_CODE) {
         return $url;
     }
         
@@ -254,7 +294,7 @@ function wppo_recreate_url($url, $lang, $coverage = 'external') {
      * it is pointing to current domain.
      */
     if (substr($url, 0, 1) == '/') {
-        $url = 'http://' . $_SERVER['HTTP_HOST'] . $url;
+        $url = WPPO_URI_SCHEME.'://' . $_SERVER['HTTP_HOST'] . $url;
     }
     
     if (substr($url, 0, 1) == '#') {

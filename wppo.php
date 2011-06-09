@@ -49,6 +49,7 @@ define('WPPO_DIR', ABSPATH . "wppo/");
 define('WPPO_PREFIX', $wpdb->prefix."wppo_");
 define('WPPO_XML2PO_COMMAND', "/usr/bin/xml2po");
 define('WPPO_ABS_URI', $_SERVER['REQUEST_URI']);
+define('WPPO_URI_SCHEME', 'http');
 define('WPPO_HOME_URL', home_url());
 
 define('WPPO_DEFAULT_LANGUAGE_NAME', 'English');
@@ -365,6 +366,19 @@ function wppo_get_lang() {
     if (isset($wppo_cache['lang'])) {
         return $wppo_cache['lang'];
     }
+    
+    /*
+     * Here we'll keep in cache all the existing languages in database.
+     * We use it here to check which desired language from browser exists and is available.
+     */
+    if (!isset($wppo_cache['available_lang'])) {
+        $all_languages = $wpdb->get_results("SELECT lang_code, lang_name FROM ".WPPO_PREFIX."languages WHERE lang_status = 'visible'", ARRAY_A);
+        
+        foreach ($all_languages as $index => $array) {
+            $wppo_cache['available_lang'][$array['lang_code']] = $array['lang_name'];
+        }
+    }
+    
 
     $lang_uri = wppo_find_lang_in_uri();
         
@@ -386,104 +400,21 @@ function wppo_get_lang() {
         
         if (strpos($defined_lang, '-') !== false) {
             $defined_lang_array = explode('-', $defined_lang);
-            $defined_lang = $defined_lang_array[0].'_'.strtoupper($defined_lang_array[1]);
+            $defined_lang = strtolower($defined_lang_array[0]).'_'.strtoupper($defined_lang_array[1]);
         }
         
         /*
          * Verify if the selected language really exists
          */
         
-        $check_lang = $wpdb->get_row(
-            "SELECT lang_code, lang_name FROM ".WPPO_PREFIX."languages ".
-            "WHERE lang_status = 'visible' AND lang_code = '".mysql_real_escape_string($defined_lang)."'", ARRAY_A
-        );
-
-        if ($wpdb->num_rows === 1) {
+        if (array_key_exists($defined_lang, $wppo_cache['available_lang'])) {
             $wppo_cache['lang'] = $defined_lang;
             return $defined_lang;
         }
-        
     }
-    
-    /*
-     * Since at this point no one told us what language the user wants to see the content,
-     * we'll try to guess from the HTTP headers
-     */
-    if (!function_exists('get_http_accept_lang')) {
 
-        function get_http_accept_lang() {
-            $langs = array();
-
-            if (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
-                
-                $accept_lang_underscore = str_replace('-', '_', $_SERVER['HTTP_ACCEPT_LANGUAGE']); 
-            
-                preg_match_all('/([a-z]{1,8}(_[a-z]{1,8})?)\s*(;\s*q\s*=\s*(1|0\.[0-9]+))?/i', $accept_lang_underscore, $lang_parse);
-
-                if (count($lang_parse[1])) {
-                    $langs = array_combine($lang_parse[1], $lang_parse[4]);
-                    
-                    foreach ($langs as $lang => $val) {
-                        if ($val === '') {
-                            $langs[$lang] = 1;
-                        }
-                    }
-
-                    arsort($langs, SORT_NUMERIC);
-                    
-                    $langs = array_keys($langs);
-                    
-                    /*
-                     * If the first language available also contains the country code,
-                     * we'll automatically add as a second option the same language without the country code
-                     * (only if it doesn't already exists)
-                     */
-                    if ((strpos($langs[0], '_') !== false) && (!isset($langs[1]) || substr($langs[0], 0, 2) != substr($langs[1], 0, 2))) {
-                        $default_lang = array_shift($langs); 
-                        $fallback_lang = explode('_', $default_lang);
-                        array_unshift($langs, $fallback_lang[0]);
-                        array_unshift($langs, $default_lang);
-                    }
-                }
-            }
-            
-            return $langs;
-        }
-    }
-    
-    /*
-     * Here we'll keep in cache all the existing languages in database.
-     * We use it here to check which desired language from browser exists and is available.
-     */
-    if (!isset($wppo_cache['available_lang'])) {
-        $all_languages = $wpdb->get_results("SELECT lang_code, lang_name FROM ".WPPO_PREFIX."languages WHERE lang_status = 'visible'", ARRAY_A);
-        
-        foreach ($all_languages as $index => $array) {
-            $wppo_cache['available_lang'][$array['lang_code']] = $array['lang_name'];
-        }
-    }
-    
-    $user_lang = get_http_accept_lang();
-    
-    foreach ($user_lang as $lang_code) {
-        if (isset($wppo_cache['available_lang'][$lang_code])) {
-            $defined_lang = $lang_code;
-            break;
-        }
-    }
-    
-    if (isset($defined_lang)) {
-        $wppo_cache['lang'] = $defined_lang;
-    } else {
-        /*
-         * Returning this means that we won't show any translation to the user.
-         * "C" disables all localization.
-         */
-        $wppo_cache['lang'] = 'C';
-        return 'C';
-    }
-    
-    return $defined_lang;
+    $wppo_cache['lang'] = WPPO_DEFAULT_LANGUAGE_CODE;
+    return WPPO_DEFAULT_LANGUAGE_CODE;
 }
 
 /*
@@ -508,7 +439,7 @@ add_action('setup_theme', function() {
     /*
      * Define default language for WordPress template
      */
-    if (wppo_get_lang() != 'C') {
+    if (wppo_get_lang() != WPPO_DEFAULT_LANGUAGE_CODE) {
         if(!defined('WPLANG')) {
             define('WPLANG', wppo_get_lang());
         }
