@@ -380,23 +380,6 @@ if (!is_admin()) {
     }, 10, 2);
 
 
-    add_filter('the_tags', function($tags, $attributes) {
-        /*
-        foreach ($categories as $index => $category) {
-            if (wppo_get_translated_term_from_id($category->term_id) != false) {
-                $categories[$index]->name   = wppo_get_translated_term_from_id($category->term_id);
-            }
-        }
-        */
-
-        var_dump($tags);
-        
-        
-        return $tags;
-        
-    }, 10, 2);
-
-
 
     /*
      * Apply translations to navigation menus
