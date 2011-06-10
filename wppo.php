@@ -192,13 +192,6 @@ function wppo_install() {
     // FIXME
     add_option("wppo_old-news-limit", strtotime('now - 4 months'));
     
-    
-    /*
-     * Check for existing translations
-     */
-    // FIXME
-    //wppo_update_pot_file();
-    
 }
 register_activation_hook(__FILE__, 'wppo_install');
 
@@ -229,7 +222,10 @@ register_deactivation_hook(__FILE__, 'wppo_uninstall');
 
 
 
-
+/*
+ * Apply translations for the title and the content,
+ * and other generic page requests
+ */
 
 add_filter('the_title', function($title, $id) {
     global $wppo_cache;
@@ -266,7 +262,7 @@ add_filter('get_pages', function($pages) {
     $lang = wppo_get_lang();
 
     foreach ($pages as $index => $page) {
-        if (!isset($wppo_cache['posts'][$page->ID]) && $lang != 'C') {
+        if (!isset($wppo_cache['posts'][$page->ID]) && $lang != WPPO_DEFAULT_LANGUAGE_CODE) {
             $wppo_cache['posts'][$page->ID] = $wpdb->get_row("SELECT * FROM " . WPPO_PREFIX . "posts ".
                                                              "WHERE post_id = '" . mysql_real_escape_string($page->ID) . "' ".
                                                              "AND lang = '" . mysql_real_escape_string($lang) . "'", ARRAY_A);
@@ -285,6 +281,69 @@ add_filter('get_pages', function($pages) {
 }, 1);
 
 
+
+
+/*
+ * Apply translations for
+ * categories, tags and terms
+ */
+
+function wppo_get_translated_term_from_id($term_id) {
+
+    global $wppo_cache, $wpdb;
+
+    $lang = wppo_get_lang();
+    
+    if (!isset($wppo_cache['terms'][$term_id]) && $lang != WPPO_DEFAULT_LANGUAGE_CODE) {
+        $wppo_cache['terms'][$term_id] = $wpdb->get_row("SELECT * FROM " . WPPO_PREFIX . "terms ".
+                                                                  "WHERE term_id = '" . mysql_real_escape_string($term_id) . "' ".
+                                                                  "AND lang = '" . mysql_real_escape_string($lang) . "'", ARRAY_A);
+    }
+
+    if (isset($wppo_cache['terms'][$term_id]) && is_array($wppo_cache['terms'][$term_id])) {
+        return $wppo_cache['terms'][$term_id]['translated_name'];
+    }
+
+    return false;
+    
+}
+
+add_filter('get_category', function($category) {
+
+    if (wppo_get_translated_term_from_id($category->term_id) != false) {
+        $category->name = wppo_get_translated_term_from_id($category->term_id);
+    }
+    return $category;
+
+}, 10);
+
+add_filter('wp_get_object_terms', function($categories) {
+
+    foreach ($categories as $index => $category) {
+        if (wppo_get_translated_term_from_id($category->term_id) != false) {
+            $categories[$index]->name   = wppo_get_translated_term_from_id($category->term_id);
+        }
+    }
+    
+    return $categories;
+    
+}, 10, 2);
+
+add_filter('list_cats', function($category_name, $attributes) {
+    
+    if (wppo_get_translated_term_from_id($attributes->term_id) != false) {
+        $category_name = wppo_get_translated_term_from_id($attributes->term_id);
+    }
+    return $category_name;
+
+}, 10, 2);
+
+
+
+/*
+ * Apply translations to navigation menus
+ */
+
 add_filter('wp_get_nav_menu_items', function($items) {
     
     global $wppo_cache, $wpdb;
@@ -301,7 +360,7 @@ add_filter('wp_get_nav_menu_items', function($items) {
             
             if ($post_id != $item->ID) {
                 
-                if (!isset($wppo_cache['posts'][$post_id]) && $lang != 'C') {
+                if (!isset($wppo_cache['posts'][$post_id]) && $lang != WPPO_DEFAULT_LANGUAGE_CODE) {
                     $wppo_cache['posts'][$post_id] = $wpdb->get_row("SELECT * FROM " . WPPO_PREFIX . "posts ".
                                                                     "WHERE post_id = '" . mysql_real_escape_string($post_id) . "' ".
                                                                     "AND lang = '" . mysql_real_escape_string($lang) . "'", ARRAY_A);
@@ -333,7 +392,7 @@ add_filter('posts_search', function($search) {
     
     $lang = wppo_get_lang();
     
-    if ($lang != 'C') {
+    if ($lang != WPPO_DEFAULT_LANGUAGE_CODE) {
         $search = str_replace("({$wpdb->posts}.post_content LIKE ", "(".WPPO_PREFIX."posts.translated_content LIKE ", $search);
         $search = str_replace("({$wpdb->posts}.post_title LIKE ",   "(".WPPO_PREFIX."posts.translated_title LIKE ", $search);
     }
@@ -350,7 +409,7 @@ add_filter('posts_clauses', function($clauses) {
     
         $lang = wppo_get_lang();
         
-        if ($lang != 'C') {
+        if ($lang != WPPO_DEFAULT_LANGUAGE_CODE) {
             $clauses['join'] = "LEFT JOIN ".WPPO_PREFIX."posts ON $wpdb->posts.ID = ".WPPO_PREFIX."posts.post_id ".
                                "AND ".WPPO_PREFIX."posts.lang = '".mysql_real_escape_string($lang)."'";
         }
@@ -430,6 +489,7 @@ function wppo_get_all_available_langs() {
     global $wppo_cache;
     wppo_get_lang();
     return $wppo_cache['available_lang'];
+    
 }
 
 /*
@@ -477,7 +537,7 @@ function wppo_get_translated_data($string, $id = null) {
         $p = $post;
     }
     
-    if ($lang != "C") {
+    if ($lang != WPPO_DEFAULT_LANGUAGE_CODE) {
         if (!isset($wppo_cache['posts'][$p->ID])) {
             $wppo_cache['posts'][$p->ID] = $wpdb->get_row("SELECT * FROM " . WPPO_PREFIX . "posts ".
                                                           "WHERE post_id = '" . mysql_real_escape_string($p->ID). "' ".

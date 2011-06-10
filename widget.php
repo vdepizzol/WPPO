@@ -7,7 +7,8 @@ wp_register_sidebar_widget(
         
         $langs = wppo_get_all_available_langs();
         
-        echo '<h3 class="widget-title">'.__('Languages').'</h3>'."\n".
+        echo '<li id="languages" class="widget-container widget_languages">'."\n".
+             '<h3 class="widget-title">'.__('Languages').'</h3>'."\n".
              '<ul>'."\n";
         
         
@@ -16,7 +17,8 @@ wp_register_sidebar_widget(
         foreach ($langs as $lang_code => $lang_name) {
             echo '<li><a href="'.wppo_recreate_url($_SERVER['REQUEST_URI'], $lang_code).'">'.$lang_name.'</a></li>';
         }
-        echo '</ul>'."\n";
+        echo '</ul>'."\n".
+             '</li>'."\n";
     },
     array(
         'description' => 'List all available languages'

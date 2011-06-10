@@ -381,7 +381,7 @@ function wppo_recreate_url($url, $lang, $coverage = 'external') {
     
     global $wp_rewrite;
     
-    if ($wp_rewrite->using_permalinks()) {
+    //if ($wp_rewrite->using_permalinks()) {
             
         if ($uri_vars['home_path'] != '') {
             $common_url = '://'.$_SERVER['HTTP_HOST'].'/'.$uri_vars['home_path'].'/';
@@ -391,6 +391,7 @@ function wppo_recreate_url($url, $lang, $coverage = 'external') {
         
         $new_url = str_replace($common_url, $common_url.$lang.'/', $url);
 
+    /*
     } else {
 
         if (strpos($url, '?') === false) {
@@ -402,6 +403,7 @@ function wppo_recreate_url($url, $lang, $coverage = 'external') {
         $new_url = $url.$glue.'lang='.$lang;
         
     }
+    */
 
     
     return $new_url;
