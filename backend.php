@@ -168,6 +168,34 @@ function wppo_check_for_po_changes() {
             $dom = new DOMDocument();
             $dom->loadXML($translated_xml_content);
             
+            /*
+             * Read the bloginfo
+             */
+            $bloginfo = $dom->getElementsByTagName('bloginfo');
+            
+            /*
+             * Read the terms
+             */
+            
+            $terms = $dom->getElementsByTagName('term');
+            foreach($terms as $item) {
+                $terms_node['term_id'] = $item->getAttributeNode('id')->value;
+                $terms_node['translated_name'] = $item->nodeValue;
+                $terms_node['lang'] = $lang;
+                
+                if (!$wpdb->get_row("SELECT term_id FROM ".WPPO_PREFIX."terms WHERE term_id = '". mysql_real_escape_string($terms_node['term_id']) ."' AND lang = '". mysql_real_escape_string($lang) ."'")) {
+                    $wpdb->insert(WPPO_PREFIX."terms", $terms_node);
+                } else {
+                    $wpdb->update(WPPO_PREFIX."terms", $terms_node, array('term_id' => $terms_node['term_id'], 'lang' => $lang));
+                }
+                unset($terms_node);
+            }
+            
+            
+            /*
+             * Read all the posts
+             */
+             
             $posts = $dom->getElementsByTagName('post');
             
             /*
@@ -321,7 +349,37 @@ function wppo_generate_po_xml($post_type) {
         
         $root->appendChild($node['bloginfo']['elem']);
         
+        
+        /*
+         * Support for translated terms
+         */
+         
+        $terms = $wpdb->get_results("SELECT * FROM {$wpdb->terms}");
+        
+        $node['terms']['elem'] = $dom->createElement("terms");
+        
+        foreach ($terms as $row) {
+            
+            $node['terms'][$row->slug]['tag'] = $dom->createElement('term');
+            
+            $node['terms'][$row->slug]['id'] = $dom->createAttribute('id');
+            $node['terms'][$row->slug]['id_value'] = $dom->createTextNode($row->term_id);
+            $node['terms'][$row->slug]['id']->appendChild($node['terms'][$row->slug]['id_value']);
+            
+            $node['terms'][$row->slug]['name'] = $dom->createTextNode($row->name);
+            
+            $node['terms'][$row->slug]['tag']->appendChild($node['terms'][$row->slug]['id']);
+            $node['terms'][$row->slug]['tag']->appendChild($node['terms'][$row->slug]['name']);
+            
+            $node['terms']['elem']->appendChild($node['terms'][$row->slug]['tag']);
+            
+        }
+        
+        $root->appendChild($node['terms']['elem']);
+        
     }
+    
+    $posts_group = $dom->createElement("posts");
 
     foreach ($posts as $id => $row) {
         
@@ -398,10 +456,12 @@ function wppo_generate_po_xml($post_type) {
                 
             }
             
-            $root->appendChild($post);
+            $posts_group->appendChild($post);
             
         }
     }
+    
+    $root->appendChild($posts_group);
     
     $dom->appendChild($root);
     $content = $dom->saveXML();

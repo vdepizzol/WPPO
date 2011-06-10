@@ -107,6 +107,13 @@ function wppo_install() {
                                   `translated` double NOT NULL,
                                   `fuzzy` double NOT NULL,
                                   `untranslated` double NOT NULL
+                                ) ENGINE=MYISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;",
+                                
+        'terms'           =>    "CREATE TABLE `".WPPO_PREFIX."terms` (
+                                  `wppo_term_id` bigint(20) NOT NULL AUTO_INCREMENT PRIMARY KEY ,
+                                  `term_id` bigint(20) NOT NULL ,
+                                  `lang` varchar(10) NOT NULL ,
+                                  `translated_name` varchar(200) NOT NULL
                                 ) ENGINE=MYISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;"
     );
     
