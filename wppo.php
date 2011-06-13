@@ -211,7 +211,7 @@ function wppo_uninstall() {
      * Drop existing tables
      */
     
-    $tables = array('posts', 'languages', 'translation_log');
+    $tables = array('posts', 'languages', 'translation_log', 'terms', 'options');
     
     foreach ($tables as $index => $name) {
         $tables[$index] = WPPO_PREFIX.$name;
@@ -231,6 +231,7 @@ register_deactivation_hook(__FILE__, 'wppo_uninstall');
 
 
 if (!is_admin()) {
+    
     /*
      * Apply translations for the website title and description
      */
@@ -263,6 +264,7 @@ if (!is_admin()) {
         
     }, 10, 2);
 
+
     /*
      * Apply translations for the title and the content,
      * and other generic page requests
@@ -279,6 +281,8 @@ if (!is_admin()) {
             return $translated_title;
         }
     }, 10, 2);
+        
+    
 
     add_filter('the_content', function($content) {
         global $wppo_cache, $post;
