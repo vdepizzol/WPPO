@@ -27,7 +27,7 @@ require_once("poparser.class.php");
  * 
  * TODO:
  * For reference it shouldn't just replace the previous POT files.
- * It should keep a backup somewhere else.
+ * In the future we should keep a backup somewhere else.
  * 
  */
 function wppo_update_pot($coverage = array('dynamic', 'static')) {
@@ -61,9 +61,6 @@ function wppo_update_pot($coverage = array('dynamic', 'static')) {
         }
         
         $output = shell_exec(WPPO_XML2PO_COMMAND." -m xhtml -o ".escapeshellarg($pot_file)." ".escapeshellarg($xml_file));
-        
-        // Updates translation_log table.
-        // FIXME
         
     }
     
@@ -201,7 +198,7 @@ function wppo_check_for_po_changes() {
             /*
              * An underline before the tag name means that it is an
              * attribute in the XML tree
-             * (attributes are not translated by xml2po
+             * (attributes are not translated by xml2po)
              */
             $attributes = array(
                 '_id' => 'post_id',
@@ -290,21 +287,9 @@ function wppo_generate_po_xml($post_type) {
     
     if ($post_type == 'static') {
         
-        /*
-         * Pages must include also some permanent data in the future,
-         * like website name and navigation menus
-         * TODO
-         */
-        
         $sql .= " AND post_type IN ('page', 'nav_menu_item') ORDER BY post_type ASC";
         
     } elseif ($post_type == 'dynamic') {
-        
-        /*
-         * We need to verify how attachments are stored in wp_posts before
-         * giving it to the translators
-         * FIXME
-         */
         
         $sql .= " AND post_type NOT IN ('page', 'nav_menu_item')";
         
@@ -316,7 +301,7 @@ function wppo_generate_po_xml($post_type) {
     
     /*
      * We still don't do anything with the list of broken DOM pages
-     * FIXME
+     * TODO
      */
     $broken_dom_pages = array();
 

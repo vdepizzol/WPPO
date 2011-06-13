@@ -38,7 +38,7 @@ function wppo_get_absolute_uri_vars() {
     
     /*
      * WPPO_HOME_URL is just like home_url(),
-     * except that it won't come with the filter we just added
+     * except it won't come with the filter we just added
      */
     $home_path = parse_url(WPPO_HOME_URL);
     
