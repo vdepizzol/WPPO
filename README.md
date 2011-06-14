@@ -8,6 +8,16 @@ How WPPO works
 
 _to do_
 
+
+Requirements
+------------
+
+- PHP 5.3 or later
+- MySQL
+- WordPress 3.0 or later
+- gnome-doc-utils
+- gettext
+
 Install
 -------
 
