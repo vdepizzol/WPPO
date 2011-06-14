@@ -43,6 +43,6 @@ Install
 - Add the language in the _Translations_ panel following the same language code
 - Press the button _Check for language updates_ and voilà.
 
-_Language format should follow the same pattern from GetText:_
- - `ll`: ISO 639 two-letter language code (lowercase)
+_Language format should follow the same pattern from GetText:_  
+ - `ll`: ISO 639 two-letter language code (lowercase)  
  - `CC`: ISO 3166 two-letter country code (uppercase)
