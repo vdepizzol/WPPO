@@ -1,13 +1,13 @@
 WPPO
 ====
 
-WPPO creates WordPress-based websites multi-lingual by using the same infrastructure that already exists for open source projects.
+WPPO enables WordPress-based websites to be multi-lingual by using the same infrastructure that already exists for open source projects.
 
 How WPPO works
 --------------
 
 WPPO is a `gettext` layer for WordPress content. It uses `xml2po` lib from `gnome-doc-utils` and `gettext` libraries to allow localizing the website content.
-
+    
 WPPO is not a platform to translate strings and create PO files. Instead, WPPO generates POT files of all the website content and has the ability to read the filled PO files and convert them to translated pages on the web.
 
 Creating a new language for a WordPress-based website requires translations of three parts (in parenthesis the place where PO files for each part are located):
@@ -18,7 +18,7 @@ Creating a new language for a WordPress-based website requires translations of t
 
 Since WordPress can manage translations of its core, themes and plugins, WPPO comes to fill the gap and allow translation of the content of the website (and also allow to use different languages accordingly).
 
-WordPress is already translated in a lot of languages. WPPO tries to download dynamically the WordPress translation strings when a new language is added.
+WordPress is already translated into a lot of languages. WPPO tries to download dynamically the WordPress translation strings when a new language is added.
 
 
 Requirements
@@ -38,10 +38,15 @@ Install
 - Give writing permissions to `wp-content/languages`.
 - Comment the line `define('WPLANG', '');` in wp-config.php
 - Activate the plugin
+
+Adding new languages
+--------------------
+
 - Generate the POT files in the _Translations_ admin panel
 - Download the POT files from `wppo` folder, translate the strings and save as `ll.po` or `ll_CC.po`* in the `po` folder inside the directories `static` and `dynamic`
 - Add the language in the _Translations_ panel following the same language code
-- Press the button _Check for language updates_ and voilà.
+- Make sure to provide translations for the theme and WordPress instance
+- Press the _Check for language updates_ button and voilà.
 
 _Language format should follow the same pattern from GetText:_  
  - `ll`: ISO 639 two-letter language code (lowercase)  
