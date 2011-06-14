@@ -1,18 +1,27 @@
 WPPO plugin TODO
 ================
 
+- Integrate with Damned Lies
+
+    WPPO translation plugin doesn't work alone. Damned lies must be configured
+    to download POT files via HTTP.
+
+- Beautify Admin area
+
+- Replace links in translated content to proper version in current language
+    
+
+
+DONE THINGS
+===========
+
 - Separate POT files from pages and from news
 
     According to the discussion in i18n-coordination-list, it was agreed to use
     separated files for translations from pages and from news.
     
     (Maybe in the plugin admin area could have some option regarding this)
-    
 
-- Integrate with Damned Lies
-
-    WPPO translation plugin doesn't work alone. Damned lies must be configured
-    to download POT files via HTTP.
 
 - Create an admin page with update actions
 
@@ -27,14 +36,6 @@ WPPO plugin TODO
     Right now the translated content is viewed in the search results, but the 
     query can only be in english.
     
-- Fix XML2PO xhtml mode
-
-    Currently xhtml mode[1] from xml2po don't care about ignoring "src" and "href"
-    params to the translator. We need to fix this if we don't want translators
-    to change URLs.
-    
-    [1] http://git.gnome.org/browse/gnome-doc-utils/tree/xml2po/xml2po/modes/xhtml.py
-    
     
 - Store all the available languages
 
@@ -46,8 +47,6 @@ WPPO plugin TODO
 
 
 - Pages don't have absolute address
-
-    @MINOR
 
     This is not a major issue for the user, but it is for search robots[2].
     Each page should have an absolute path, like http://gnome.org/es/acerca/
