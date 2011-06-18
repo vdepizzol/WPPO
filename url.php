@@ -233,7 +233,7 @@ add_filter('body_class', function($classes) {
 
 add_filter('home_url', 'wppo_rewrite_permalinks', 10);
 
-function wppo_rewrite_permalinks($permalink) {    
+function wppo_rewrite_permalinks($permalink) {
     $lang = wppo_get_lang();
     return wppo_recreate_url($permalink, $lang, 'internal');
 }
@@ -293,11 +293,23 @@ function wppo_recreate_url($url, $lang, $coverage = 'external') {
         $url = WPPO_URI_SCHEME.'://' . $_SERVER['HTTP_HOST'] . $url;
     }
     
+    /*
+     * If the link is an anchor, wppo won't do anything.
+     */
     if (substr($url, 0, 1) == '#') {
         return $url;
     }
     
     $old_url = $url;
+    
+    /*
+     * If some url is passed like example.com/page?query
+     * we'll convert to example.com/page/?query
+     */
+    $pos = strpos($url, '?');
+    if ($pos !== false && strpos($url, '/?') === false) {
+        $url = substr_replace($url, '/?', $pos, strlen('?'));
+    }
     
     
     /*
@@ -382,7 +394,7 @@ function wppo_recreate_url($url, $lang, $coverage = 'external') {
     global $wp_rewrite;
     
     //if ($wp_rewrite->using_permalinks()) {
-            
+        
         if ($uri_vars['home_path'] != '') {
             $common_url = '://'.$_SERVER['HTTP_HOST'].'/'.$uri_vars['home_path'].'/';
         } else {
