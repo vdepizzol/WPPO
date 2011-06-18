@@ -534,6 +534,12 @@ function wppo_get_all_available_langs() {
     
     global $wppo_cache;
     wppo_get_lang();
+    
+    $wppo_cache['available_lang'] = array_merge(
+        array(WPPO_DEFAULT_LANGUAGE_CODE => WPPO_DEFAULT_LANGUAGE_NAME),
+        $wppo_cache['available_lang']
+    );
+    
     return $wppo_cache['available_lang'];
     
 }
