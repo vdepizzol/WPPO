@@ -282,7 +282,21 @@ if (!is_admin()) {
         }
     }, 10, 2);
         
-    
+    add_filter('the_excerpt', function($excerpt) {
+        global $wppo_cache, $post;
+
+        if (isset($wppo_cache['posts'][$post->ID])) {
+            $translated_excerpt = $wppo_cache['posts'][$post->ID]['translated_excerpt'];
+        } else {
+            $translated_excerpt = trim(wppo_get_translated_data('translated_excerpt', $post->ID));
+        }
+
+        if (empty($translated_excerpt)) {
+            return $excerpt;
+        } else {
+            return $translated_excerpt;
+        }
+    }, 10, 2);
 
     add_filter('the_content', function($content) {
         global $wppo_cache, $post;
