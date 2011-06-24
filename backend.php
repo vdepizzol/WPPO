@@ -52,6 +52,37 @@ function wppo_update_pot($coverage = array('dynamic', 'static')) {
         $pot_file = WPPO_DIR.$post_type.".pot";
         $xml_file = WPPO_DIR.$post_type.".xml";
         
+        wppo_update_xml($post_type);
+        
+        $output = shell_exec(WPPO_XML2PO_COMMAND." -m xhtml -o ".escapeshellarg($pot_file)." ".escapeshellarg($xml_file));
+        
+    }
+    
+}
+
+/*
+ * This regenerates the main XML files used for xml2po
+ */
+function wppo_update_xml($coverage = array('dynamic', 'static')) {
+    
+    global $wpdb;
+    
+    if ($coverage == 'all') {
+        $coverage = array('dynamic', 'static');
+    }
+    
+    if (is_string($coverage) && $coverage != 'dynamic' && $coverage != 'static') {
+        die("First argument of wppo_update_xml() must be \"dynamic\" or \"static\" (or an array of both).");
+    }
+    
+    if (is_string($coverage)) {
+        $coverage = array($coverage);
+    }
+    
+    foreach ($coverage as $post_type) {
+        
+        $xml_file = WPPO_DIR.$post_type.".xml";
+        
         $generated_xml = wppo_generate_po_xml($post_type);
         
         if (is_writable($xml_file)) {
@@ -60,10 +91,9 @@ function wppo_update_pot($coverage = array('dynamic', 'static')) {
             die("Ooops. We got an error here. The file ".$xml_file." must be writeable otherwise we can't do anything.");
         }
         
-        $output = shell_exec(WPPO_XML2PO_COMMAND." -m xhtml -o ".escapeshellarg($pot_file)." ".escapeshellarg($xml_file));
-        
     }
     
+    return true;
 }
 
 
@@ -72,9 +102,26 @@ function wppo_update_pot($coverage = array('dynamic', 'static')) {
 /*
  * This function will check for changes in all the PO files,
  * in order to try to keep track of changes in the translations
+ * 
+ * With $force = true, changes will be done even if PO files
+ * aren't updated. This is used when original content is changed.
  */
-function wppo_check_for_po_changes() {
+function wppo_check_for_po_changes($force = false, $coverage = array('dynamic', 'static')) {
     global $wpdb;
+    
+    
+    if ($coverage == 'all') {
+        $coverage = array('dynamic', 'static');
+    }
+    
+    if (is_string($coverage) && $coverage != 'dynamic' && $coverage != 'static') {
+        die("Second argument of wppo_check_for_po_changes() must be \"dynamic\" or \"static\" (or an array of both).");
+    }
+    
+    if (is_string($coverage)) {
+        $coverage = array($coverage);
+    }
+    
     
     $po_dates = array();
     
@@ -83,7 +130,7 @@ function wppo_check_for_po_changes() {
         // Walk trough post_type folders
         while(false !== ($post_type_item = readdir($post_type_handle))) {
             
-            if (is_dir(WPPO_DIR.$post_type_item) && ($post_type_item == 'dynamic' || $post_type_item == 'static')) {
+            if (is_dir(WPPO_DIR.$post_type_item) && in_array($post_type_item, $coverage)) {
                 
                 // Walk trough lang files inside po folder
                 if ($lang_handle = opendir(WPPO_DIR.$post_type_item.'/po/')) {
@@ -112,36 +159,42 @@ function wppo_check_for_po_changes() {
             
             /*
              * Check if the existing PO file exists in the
-             * translation_log table
+             * translation_log table.
+             * 
+             * If the function needs to force an update,
+             * ignores this step.
              */
-            if (!$wpdb->get_row("SELECT translation_date FROM `".WPPO_PREFIX."translation_log` ".
-                                "WHERE lang = '".mysql_real_escape_string($lang)."' ".
-                                "AND post_type = '".mysql_real_escape_string($post_type)."' ".
-                                "AND translation_date = '".mysql_real_escape_string($last_modified)."' ".
-                                "LIMIT 1")) {
-                
-                /*
-                 * Here we get all the statistics regarding the file
-                 */
-                
-                $stats = POParser::stats(WPPO_DIR.$post_type.'/po/'.$lang.'.po');
-                
-                $wpdb->insert(WPPO_PREFIX."translation_log",
-                    array(
-                        'lang' => $lang,
-                        'post_type' => $post_type,
-                        'translation_date' => $last_modified,
-                        'translated' => $stats['translated'],
-                        'fuzzy' => $stats['fuzzy'],
-                        'untranslated' => $stats['untranslated'],
-                    ),
-                    array('%s', '%s', '%d', '%d', '%d', '%d', '%d')
-                );
-                
+            if ($force == false) {
+                if (!$wpdb->get_row("SELECT translation_date FROM `".WPPO_PREFIX."translation_log` ".
+                                    "WHERE lang = '".mysql_real_escape_string($lang)."' ".
+                                    "AND post_type = '".mysql_real_escape_string($post_type)."' ".
+                                    "AND translation_date = '".mysql_real_escape_string($last_modified)."' ".
+                                    "LIMIT 1")) {
+                    
+                    /*
+                     * Here we get all the statistics regarding the file
+                     */
+                    
+                    $stats = POParser::stats(WPPO_DIR.$post_type.'/po/'.$lang.'.po');
+                    
+                    $wpdb->insert(WPPO_PREFIX."translation_log",
+                        array(
+                            'lang' => $lang,
+                            'post_type' => $post_type,
+                            'translation_date' => $last_modified,
+                            'translated' => $stats['translated'],
+                            'fuzzy' => $stats['fuzzy'],
+                            'untranslated' => $stats['untranslated'],
+                        ),
+                        array('%s', '%s', '%d', '%d', '%d', '%d', '%d')
+                    );
+                    
+                    $po_files_needing_update[$post_type][] = $lang;
+                    
+                }
+            } else {
                 $po_files_needing_update[$post_type][] = $lang;
-                
             }
-            
         }
     }
     
@@ -453,3 +506,26 @@ function wppo_generate_po_xml($post_type) {
     
     return $content;
 }
+
+
+/*
+ * Regenerates main XML file when some post is edited.
+ * 
+ * This will make sure every translated page is up to date
+ * with the original content, even if no translation is available
+ * for all the strings.
+ */
+function wppo_apply_changes_to_translated_content($post_id, $post) {
+    
+    if ($post->post_type == 'page') {
+        $coverage = 'static';
+    } else {
+        $coverage = 'dynamic';
+    }
+    
+    wppo_update_xml($coverage);
+    
+    wppo_check_for_po_changes('force', $coverage);
+    
+}
+add_action('post_updated', 'wppo_apply_changes_to_translated_content', 10, 2);
