@@ -354,7 +354,7 @@ function wppo_generate_po_xml($post_type) {
     $sql = "SELECT ID, post_content, post_title, post_excerpt, post_name, post_type
             FROM wp_posts
             WHERE
-                post_status IN ('publish', 'future') AND
+                post_status IN ('inherit', 'publish', 'future') AND
                 post_type != 'revision'";
     
     if ($post_type == 'static') {
