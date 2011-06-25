@@ -32,7 +32,7 @@ require_once("poparser.class.php");
  */
 function wppo_update_pot($coverage = array('dynamic', 'static')) {
     
-    global $wpdb;
+    global $wpdb, $wppo_error;
     
     if ($coverage == 'all') {
         $coverage = array('dynamic', 'static');
@@ -54,8 +54,11 @@ function wppo_update_pot($coverage = array('dynamic', 'static')) {
         
         wppo_update_xml($post_type);
         
-        $output = shell_exec(WPPO_XML2PO_COMMAND." -m xhtml -o ".escapeshellarg($pot_file)." ".escapeshellarg($xml_file));
+        $output = shell_exec(WPPO_XML2PO_COMMAND." -m xhtml -o ".escapeshellarg($pot_file)." ".escapeshellarg($xml_file)." 2>&1");
         
+        if (trim($output) != '') {
+            $wppo_error['xml2pot'][$post_type] = $output;
+        }
     }
     
 }
@@ -107,8 +110,8 @@ function wppo_update_xml($coverage = array('dynamic', 'static')) {
  * aren't updated. This is used when original content is changed.
  */
 function wppo_check_for_po_changes($force = false, $coverage = array('dynamic', 'static')) {
-    global $wpdb;
     
+    global $wpdb, $wppo_error;
     
     if ($coverage == 'all') {
         $coverage = array('dynamic', 'static');
@@ -202,6 +205,8 @@ function wppo_check_for_po_changes($force = false, $coverage = array('dynamic', 
         return 0;
     }
     
+    $updated_po_files = 0;
+    
     foreach ($po_files_needing_update as $post_type => $langs) {
         foreach ($langs as $lang) {
             
@@ -210,118 +215,132 @@ function wppo_check_for_po_changes($force = false, $coverage = array('dynamic', 
             $translated_xml_file = WPPO_DIR.$post_type.'/xml/'.$lang.'.xml';
             
             
-            $command = WPPO_XML2PO_COMMAND." -m xhtml -p ".escapeshellarg($po_file)." -o ".escapeshellarg($translated_xml_file)." ".escapeshellarg($original_xml_file);
+            $command = WPPO_XML2PO_COMMAND." -m xhtml -p ".escapeshellarg($po_file)." -o ".escapeshellarg($translated_xml_file)." ".escapeshellarg($original_xml_file)." 2>&1";
             $output = shell_exec($command);
+            
+            if (trim($output) == '') {
                         
-            $translated_xml_content = file_get_contents($translated_xml_file);
-            
-            $dom = new DOMDocument();
-            $dom->loadXML($translated_xml_content);
-            
-            /*
-             * Read the bloginfo
-             */
-            $bloginfo = $dom->getElementsByTagName('bloginfo');
-            
-            /*
-             * Read the terms
-             */
-            
-            $terms = $dom->getElementsByTagName('term');
-            foreach($terms as $item) {
-                $terms_node['term_id'] = $item->getAttributeNode('id')->value;
-                $terms_node['translated_name'] = $item->nodeValue;
-                $terms_node['lang'] = $lang;
+                $translated_xml_content = file_get_contents($translated_xml_file);
                 
-                if (!$wpdb->get_row("SELECT term_id FROM ".WPPO_PREFIX."terms WHERE term_id = '". mysql_real_escape_string($terms_node['term_id']) ."' AND lang = '". mysql_real_escape_string($lang) ."'")) {
-                    $wpdb->insert(WPPO_PREFIX."terms", $terms_node);
-                } else {
-                    $wpdb->update(WPPO_PREFIX."terms", $terms_node, array('term_id' => $terms_node['term_id'], 'lang' => $lang));
-                }
-                unset($terms_node);
-            }
-            
-            
-            /*
-             * Read all the posts
-             */
-             
-            $posts = $dom->getElementsByTagName('post');
-            
-            /*
-             * An underline before the tag name means that it is an
-             * attribute in the XML tree
-             * (attributes are not translated by xml2po)
-             */
-            $attributes = array(
-                '_id' => 'post_id',
-                'title' => 'translated_title',
-                'excerpt' => 'translated_excerpt',
-                'content' => 'translated_content'
-            );
-            
-            foreach ($posts as $post) {
-                
-                foreach ($attributes as $tag => $column) {
-                    
-                    if (substr($tag, 0, 1) == '_') {
-                        $tag = substr($tag, 1);
-                        $isAttribute = true;
-                    } else {
-                        $isAttribute = false;
-                    }
-                    
-                    switch ($tag) {
-                        
-                        case 'content':
-                        
-                            if (!empty($post->getElementsByTagName('content')->item(0)->childNodes)) {
-                                $temporary_content_tree = $post->getElementsByTagName('html')->item(0)->childNodes;
-                                $node[$column] = '';
-                                foreach ($temporary_content_tree as $element) {
-                                    $node[$column] .= $element->ownerDocument->saveXML($element);
-                                }
-                                
-                                // Find all the links and convert to current language
-                                $node[$column] = wppo_recreate_links_in_html($node[$column], $lang);
-                            }
-                            
-                        break;
-                        
-                        default:
-                        
-                            if ($isAttribute) {
-                                if (!empty($post->getAttributeNode($tag)->value)) {
-                                    $node[$column] = $post->getAttributeNode($tag)->value;
-                                }
-                            } else {
-                                if (!empty($post->getElementsByTagName($tag)->item(0)->nodeValue)) {
-                                    $node[$column] = $post->getElementsByTagName($tag)->item(0)->nodeValue;
-                                }
-                            }
-                            
-                        break;
-                        
-                    }
-                }
-                
-                $node['lang'] = $lang;
+                $dom = new DOMDocument();
+                $dom->loadXML($translated_xml_content);
                 
                 /*
-                 * Stores in the table the translated version of the page
+                 * Read the bloginfo
                  */
-
-                if (!$wpdb->get_row("SELECT wppo_id FROM ".WPPO_PREFIX."posts WHERE post_id = '". mysql_real_escape_string($node['post_id']) ."' AND lang = '". mysql_real_escape_string($lang) ."'")) {
-                    $wpdb->insert(WPPO_PREFIX."posts", $node);
-                } else {
-                    $wpdb->update(WPPO_PREFIX."posts", $node, array('post_id' => $node['post_id'], 'lang' => $lang));
+                $bloginfo = $dom->getElementsByTagName('bloginfo');
+                
+                /*
+                 * Read the terms
+                 */
+                
+                $terms = $dom->getElementsByTagName('term');
+                foreach($terms as $item) {
+                    $terms_node['term_id'] = $item->getAttributeNode('id')->value;
+                    $terms_node['translated_name'] = $item->nodeValue;
+                    $terms_node['lang'] = $lang;
+                    
+                    if (!$wpdb->get_row("SELECT term_id FROM ".WPPO_PREFIX."terms WHERE term_id = '". mysql_real_escape_string($terms_node['term_id']) ."' AND lang = '". mysql_real_escape_string($lang) ."'")) {
+                        $wpdb->insert(WPPO_PREFIX."terms", $terms_node);
+                    } else {
+                        $wpdb->update(WPPO_PREFIX."terms", $terms_node, array('term_id' => $terms_node['term_id'], 'lang' => $lang));
+                    }
+                    unset($terms_node);
                 }
+                
+                
+                /*
+                 * Read all the posts
+                 */
+                 
+                $posts = $dom->getElementsByTagName('post');
+                
+                /*
+                 * An underline before the tag name means that it is an
+                 * attribute in the XML tree
+                 * (attributes are not translated by xml2po)
+                 */
+                $attributes = array(
+                    '_id' => 'post_id',
+                    'title' => 'translated_title',
+                    'excerpt' => 'translated_excerpt',
+                    'content' => 'translated_content'
+                );
+                
+                foreach ($posts as $post) {
+                    
+                    foreach ($attributes as $tag => $column) {
+                        
+                        if (substr($tag, 0, 1) == '_') {
+                            $tag = substr($tag, 1);
+                            $isAttribute = true;
+                        } else {
+                            $isAttribute = false;
+                        }
+                        
+                        switch ($tag) {
+                            
+                            case 'content':
+                            
+                                if (!empty($post->getElementsByTagName('content')->item(0)->childNodes)) {
+                                    $temporary_content_tree = $post->getElementsByTagName('html')->item(0)->childNodes;
+                                    $node[$column] = '';
+                                    foreach ($temporary_content_tree as $element) {
+                                        $node[$column] .= $element->ownerDocument->saveXML($element);
+                                    }
+                                    
+                                    // Find all the links and convert to current language
+                                    $node[$column] = wppo_recreate_links_in_html($node[$column], $lang);
+                                }
+                                
+                            break;
+                            
+                            default:
+                            
+                                if ($isAttribute) {
+                                    if (!empty($post->getAttributeNode($tag)->value)) {
+                                        $node[$column] = $post->getAttributeNode($tag)->value;
+                                    }
+                                } else {
+                                    if (!empty($post->getElementsByTagName($tag)->item(0)->nodeValue)) {
+                                        $node[$column] = $post->getElementsByTagName($tag)->item(0)->nodeValue;
+                                    }
+                                }
+                                
+                            break;
+                            
+                        }
+                    }
+                    
+                    $node['lang'] = $lang;
+                    
+                    /*
+                     * Stores in the table the translated version of the page
+                     */
+
+                    if (!$wpdb->get_row("SELECT wppo_id FROM ".WPPO_PREFIX."posts WHERE post_id = '". mysql_real_escape_string($node['post_id']) ."' AND lang = '". mysql_real_escape_string($lang) ."'")) {
+                        $wpdb->insert(WPPO_PREFIX."posts", $node);
+                    } else {
+                        $wpdb->update(WPPO_PREFIX."posts", $node, array('post_id' => $node['post_id'], 'lang' => $lang));
+                    }
+                    
+                }
+                
+                $updated_po_files++;
+                
+            } else {
+                
+                /*
+                 * XML2PO returned some error
+                 */
+                
+                $wppo_error['po2xml'][$post_type][$lang] = $output;
                 
             }
         }
     }
     
-    return count($po_files_needing_update);
+    return $updated_po_files;
 }
 
 

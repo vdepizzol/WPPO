@@ -56,6 +56,7 @@ define('WPPO_DEFAULT_LANGUAGE_NAME', 'English');
 define('WPPO_DEFAULT_LANGUAGE_CODE', 'en');
 
 $wppo_cache = array();
+$wppo_error = array();
 
 
 require_once dirname(__FILE__).'/backend.php';

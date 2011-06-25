@@ -66,7 +66,7 @@ function wppo_is_first_revision($id) {
 
 add_action('admin_menu', function() {
     
-    global $wpdb, $wppo_update_message;
+    global $wpdb, $wppo_update_message, $wppo_error;
     
     /*
      * Admin actions
@@ -233,6 +233,46 @@ add_action('admin_menu', function() {
         add_action('admin_notices', function() {
             global $wppo_update_message;
             echo "<div class=\"updated fade\"><p>".$wppo_update_message."</p></div>";
+        });
+    }
+    
+    /*
+     * XML2PO Error display
+     */
+    if (count($wppo_error) > 0) {
+        add_action('admin_notices', function() {
+            global $wppo_error;
+            echo '<div class="updated error fade">';
+            
+            foreach ($wppo_error as $action => $value) {
+                
+                if($action == 'po2xml') {
+                    
+                    echo '<p>There were some problems on handling the following PO file(s):</p>';
+                    
+                    echo '<ul>';
+                    foreach ($value as $coverage => $array) {
+                        foreach($array as $lang => $output) {
+                            echo '<li>'.$coverage.'/'.$lang.'.po<br /><pre><code style="display: block;">'.htmlspecialchars($output).'</code></pre></li>';
+                        }
+                    }
+                    echo '</ul>';
+                    
+                } elseif ($action == 'xml2pot') {
+                    
+                    echo '<p>There were some problems on generating the following POT file:</p>';
+                    
+                    echo '<ul>';
+                    foreach ($value as $coverage => $output) {
+                        echo '<li>'.$coverage.'.pot<br /><pre><code style="display: block;">'.htmlspecialchars($output).'</code></pre></li>';
+                    }
+                    echo '</ul>';
+                    
+                }
+                
+            }
+            
+            echo '</div>';
         });
     }
     
