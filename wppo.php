@@ -380,7 +380,7 @@ if (!is_admin()) {
     add_filter('wp_get_object_terms', function($categories) {
 
         foreach ($categories as $index => $category) {
-            if (wppo_get_translated_term_from_id($category->term_id) != false) {
+            if (isset($category->term_id) && wppo_get_translated_term_from_id($category->term_id) != false) {
                 $categories[$index]->name   = wppo_get_translated_term_from_id($category->term_id);
             }
         }
