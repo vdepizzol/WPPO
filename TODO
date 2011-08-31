@@ -1,19 +1,10 @@
-WPPO plugin TODO
-================
+there is nothing to do.
 
-- Integrate with Damned Lies
-
-    WPPO translation plugin doesn't work alone. Damned lies must be configured
-    to download POT files via HTTP.
-
-- Beautify Admin area
-
-- Replace links in translated content to proper version in current language
-    
+~~ move along.
 
 
-DONE THINGS
-===========
+ALL THOSE THINGS ARE DONE:
+==========================
 
 - Separate POT files from pages and from news
 
@@ -56,3 +47,8 @@ DONE THINGS
     pages.
     
     [2] http://googlewebmastercentral.blogspot.com/2010/03/working-with-multilingual-websites.html
+
+    
+- Beautify Admin area
+
+- Replace links in translated content to proper version in current language
