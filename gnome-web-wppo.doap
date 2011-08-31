@@ -1,0 +1,29 @@
+<Project xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:foaf="http://xmlns.com/foaf/0.1/"
+         xmlns:gnome="http://api.gnome.org/doap-extensions#"
+         xmlns="http://usefulinc.com/ns/doap#">
+
+  <name xml:lang="en">WPPO WordPress Plugin for GNOME.org website</name>
+  <shortdesc xml:lang="en">Allow localization support in GNOME.org content</shortdesc>
+  <description>WPPO enables WordPress-based websites to be multi-lingual by using
+  the same infrastructure that already exists for open source projects.
+  
+  WPPO is a gettext layer for WordPress content. It uses xml2po lib from
+  gnome-doc-utils and gettext libraries to allow localizing the website content.
+
+  WPPO is not a platform to translate strings and create PO files.
+  Instead, WPPO generates POT files of all the website content and has the
+  ability to read the filled PO files and convert them to translated pages on the web.</description>
+  <homepage rdf:resource="https://live.gnome.org/GnomeWeb/WPPO" />
+  <mailing-list rdf:resource="http://mail.gnome.org/mailman/listinfo/gnome-web-list" />
+  <bug-database rdf:resource="https://bugzilla.gnome.org/browse.cgi?product=website" />
+
+  <maintainer>
+    <foaf:Person>
+      <foaf:name>Vinicius Depizzol</foaf:name>
+      <foaf:mbox rdf:resource="mailto:vdepizzol@gmail.com" />
+      <gnome:userid>vdepizzol</gnome:userid>
+    </foaf:Person>
+  </maintainer>
+</Project>
