@@ -45,12 +45,16 @@ License: AGPLv3
  */
 
 global $wpdb;
-define('WPPO_DIR', ABSPATH . "wppo/");
-define('WPPO_PREFIX', $wpdb->prefix."wppo_");
+define('WPPO_VERSION', '1');
 define('WPPO_XML2PO_COMMAND', "/usr/bin/xml2po");
-define('WPPO_ABS_URI', $_SERVER['REQUEST_URI']);
+
+define('WPPO_PREFIX', $wpdb->prefix."wppo_");
+define('WPPO_DIR', ABSPATH . "wppo/");
 define('WPPO_URI_SCHEME', 'http');
+
+define('WPPO_ABS_URI', $_SERVER['REQUEST_URI']);
 define('WPPO_HOME_URL', home_url());
+define('WPPO_PLUGIN_FILE', WP_PLUGIN_DIR.'/wppo/wppo.php');
 
 define('WPPO_DEFAULT_LANGUAGE_NAME', 'English');
 define('WPPO_DEFAULT_LANGUAGE_CODE', 'en');
@@ -69,12 +73,12 @@ if (is_admin()) {
 
 
 
-
 /*
  * Install WPPO Plugin
  */
 
 function wppo_install() {
+
     
     global $wpdb;
     
@@ -190,6 +194,8 @@ function wppo_install() {
     /*
      * Add the default plugin options
      */
+     
+    add_option("wppo_version", WPPO_VERSION);
     
     // Number of old POT files we'll keep in the pot_archive folder
     // FIXME
@@ -201,7 +207,7 @@ function wppo_install() {
     add_option("wppo_old-news-limit", strtotime('now - 4 months'));
     
 }
-register_activation_hook(__FILE__, 'wppo_install');
+register_activation_hook(WPPO_PLUGIN_FILE, 'wppo_install');
 
 
 function wppo_uninstall() {
@@ -220,13 +226,14 @@ function wppo_uninstall() {
     
     $wpdb->query("DROP TABLE IF EXISTS ".implode(", ", $tables));
     
+    delete_option("wppo_version");
     
     /*
      * We won't delete any wppo files here.
      */
     
 }
-register_deactivation_hook(__FILE__, 'wppo_uninstall');
+register_deactivation_hook(WPPO_PLUGIN_FILE, 'wppo_uninstall');
 
 
 
@@ -489,10 +496,13 @@ if (!is_admin()) {
 function wppo_get_lang() {
     
     global $wpdb, $wppo_cache, $wp_query;
-
     
-    if (isset($wppo_cache['lang'])) {
-        return $wppo_cache['lang'];
+    /*
+     * If there's no WPPO installed, this function won't look for its database
+     * tables and produce avoidable errors
+     */
+    if (get_option('wppo_version') == false) {
+        return WPPO_DEFAULT_LANGUAGE_CODE;
     }
     
     /*
@@ -549,6 +559,10 @@ function wppo_get_all_available_langs() {
     
     global $wppo_cache;
     wppo_get_lang();
+    
+    if (!isset($wppo_cache['available_lang']) || !is_array($wppo_cache['available_lang'])) {
+        $wppo_cache['available_lang'] = array();
+    }
     
     $wppo_cache['available_lang'] = array_merge(
         array(WPPO_DEFAULT_LANGUAGE_CODE => WPPO_DEFAULT_LANGUAGE_NAME),
