@@ -290,7 +290,10 @@ if (!is_admin()) {
      * and other generic page requests
      */
 
-    add_filter('the_title', function($title, $id) {
+    add_filter('the_title', 'parse_title', 10, 2);
+    add_filter('single_post_title', 'parse_title', 10, 2);
+    
+    function parse_title($title, $id) {
         global $wppo_cache;
         
         $translated_title = trim(wppo_get_translated_data('translated_title', $id));
@@ -300,9 +303,12 @@ if (!is_admin()) {
         } else {
             return $translated_title;
         }
-    }, 10, 2);
+    }
+    
         
-    add_filter('the_excerpt', function($excerpt) {
+    add_filter('the_excerpt', 'parse_excerpt', 10, 1);
+    
+    function parse_excerpt($excerpt) {
         global $wppo_cache, $post;
 
         if (isset($wppo_cache['posts'][$post->ID])) {
@@ -316,9 +322,12 @@ if (!is_admin()) {
         } else {
             return $translated_excerpt;
         }
-    }, 10, 2);
+    }
 
-    add_filter('the_content', function($content) {
+
+    add_filter('the_content', 'parse_content', 10, 1);
+    
+    function parse_content($content) {
         global $wppo_cache, $post;
 
         if (isset($wppo_cache['posts'][$post->ID])) {
@@ -332,7 +341,7 @@ if (!is_admin()) {
         } else {
             return $translated_content;
         }
-    }, 10, 1);
+    }
 
     add_filter('get_pages', function($pages) {
         

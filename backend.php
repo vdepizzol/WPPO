@@ -495,7 +495,7 @@ function wppo_generate_po_xml($post_type) {
                         
                         case 'content':
                         
-                            $row->{$column} = wpautop($row->{$column});
+                            $row->{$column} = wptexturize(wpautop($row->{$column}));
 
                             $node[$tag]['value'] = $dom->createDocumentFragment();
                             $node[$tag]['value']->appendXML('<html>'.$row->{$column}.'</html>');
