@@ -230,6 +230,21 @@ function wppo_check_for_po_changes($force = false, $coverage = array('dynamic', 
                  */
                 $bloginfo = $dom->getElementsByTagName('bloginfo');
                 
+                foreach ($bloginfo->item(0)->childNodes as $option) {
+                    if (get_class($option) == 'DOMElement') {
+                        $option_node['option_name'] = $option->nodeName;
+                        $option_node['lang'] = $lang;
+                        $option_node['translated_value'] = $option->nodeValue;
+                        
+                        if (!$wpdb->get_row("SELECT option_name FROM ".WPPO_PREFIX."options WHERE option_name = '". mysql_real_escape_string($option_node['option_name']) ."' AND lang = '". mysql_real_escape_string($lang) ."'")) {
+                            $wpdb->insert(WPPO_PREFIX."options", $option_node);
+                        } else {
+                            $wpdb->update(WPPO_PREFIX."options", $option_node, array('option_name' => $option_node['options_name'], 'lang' => $lang));
+                        }
+                    }
+                }
+                
+                
                 /*
                  * Read the terms
                  */

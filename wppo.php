@@ -245,17 +245,11 @@ if (!is_admin()) {
      */
 
     add_filter('bloginfo', function($bloginfo, $attribute) {
-        //return 'HEY '.$attribute;
 
         global $wppo_cache, $wpdb;
 
         $lang = wppo_get_lang();
-        
-        switch ($attribute) {
-            case 'name':        $col_attr = 'blogname';         break;
-            case 'description': $col_attr = 'blogdescription';  break;
-            default:            $col_attr = $attribute;         break;
-        }
+        $col_attr = $attribute;
         
         if (!isset($wppo_cache['bloginfo'][$col_attr]) && $lang != WPPO_DEFAULT_LANGUAGE_CODE) {
             $wppo_cache['bloginfo'][$col_attr] = $wpdb->get_row("SELECT * FROM " . WPPO_PREFIX . "options ".
