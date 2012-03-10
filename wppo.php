@@ -244,7 +244,10 @@ if (!is_admin()) {
      * Apply translations for the website title and description
      */
 
-    add_filter('bloginfo', function($bloginfo, $attribute) {
+    add_filter('bloginfo', 'parse_bloginfo', 10, 2);
+    add_filter('get_bloginfo_rss', 'parse_bloginfo', 10, 2);
+    
+    function parse_bloginfo($bloginfo, $attribute) {
 
         global $wppo_cache, $wpdb;
 
@@ -264,7 +267,22 @@ if (!is_admin()) {
         return $bloginfo;
         
         
-    }, 10, 2);
+    }
+    
+    /*
+     * Display proper language in translated RSS feed
+     */
+    
+    add_filter('pre_option_rss_language', function() {
+    
+        $defined_lang = wppo_get_lang();
+        
+        $defined_lang_array = explode('_', $defined_lang);
+        $defined_lang = strtolower($defined_lang_array[0]).'-'.strtoupper($defined_lang_array[1]);
+        
+        return $defined_lang;
+        
+    }, 10);
 
 
     /*
