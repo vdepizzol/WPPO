@@ -46,7 +46,6 @@ License: AGPLv3
 
 global $wpdb;
 define('WPPO_VERSION', '1');
-define('WPPO_XML2PO_COMMAND', "/usr/bin/xml2po");
 
 define('WPPO_PREFIX', $wpdb->prefix."wppo_");
 define('WPPO_DIR', ABSPATH . "wppo/");
@@ -141,7 +140,7 @@ function wppo_install() {
      * Create WPPO directories
      */
     $directories_for_post_types = array('static', 'dynamic');
-    $directories_for_formats = array('po', 'xml');
+    $directories_for_formats = array('po', 'xml', 'mo');
     
     if (!is_dir(WPPO_DIR)) {
         

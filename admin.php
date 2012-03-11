@@ -268,6 +268,15 @@ add_action('admin_menu', function() {
                     }
                     echo '</ul>';
                     
+                } elseif ($action == 'msgfmt') {
+                    
+                    echo '<p>There were some problems on compiling the following MO file:</p>';
+                    
+                    echo '<ul>';
+                    foreach ($value as $coverage => $output) {
+                        echo '<li>'.$coverage.'.pot<br /><pre><code style="display: block;">'.htmlspecialchars($output).'</code></pre></li>';
+                    }
+                    echo '</ul>';
                 }
                 
             }
