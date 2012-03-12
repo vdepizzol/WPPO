@@ -53,7 +53,8 @@ define('WPPO_URI_SCHEME', 'http');
 
 define('WPPO_ABS_URI', $_SERVER['REQUEST_URI']);
 define('WPPO_HOME_URL', home_url());
-define('WPPO_PLUGIN_FILE', WP_PLUGIN_DIR.'/wppo/wppo.php');
+define('WPPO_PLUGIN_DIR', WP_PLUGIN_DIR.'/wppo/');
+define('WPPO_PLUGIN_FILE', WPPO_PLUGIN_DIR.'wppo.php');
 
 define('WPPO_DEFAULT_LANGUAGE_NAME', 'English');
 define('WPPO_DEFAULT_LANGUAGE_CODE', 'en');

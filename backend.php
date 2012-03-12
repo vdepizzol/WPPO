@@ -53,10 +53,11 @@ function wppo_update_pot($coverage = array('dynamic', 'static')) {
         
         $pot_file = WPPO_DIR.$post_type.".pot";
         $xml_file = WPPO_DIR.$post_type.".xml";
+        $its_rules_file = WPPO_PLUGIN_DIR.'wppo.its';
         
         wppo_update_xml($post_type);
         
-        $output = shell_exec(WPPO_ITSTOOL_COMMAND." -o ".escapeshellarg($pot_file)." ".escapeshellarg($xml_file)." 2>&1");
+        $output = shell_exec(WPPO_ITSTOOL_COMMAND." -i ".escapeshellarg($its_rules_file)." -o ".escapeshellarg($pot_file)." ".escapeshellarg($xml_file)." 2>&1");
         
         if (trim($output) != '') {
             $wppo_error['xml2pot'][$post_type] = $output;
@@ -217,7 +218,7 @@ function wppo_check_for_po_changes($force = false, $coverage = array('dynamic', 
             $translated_xml_file = WPPO_DIR.$post_type.'/xml/'.$lang.'.xml';
             $mo_file             = WPPO_DIR.$post_type.'/mo/'.$lang.'.mo';
             
-            $compile_command = WPPO_MSGFMT_COMMAND." ".escapeshellarg($po_file)." -o ".escapeshellarg($mo_file)." 2>&1";
+            $compile_command = WPPO_MSGFMT_COMMAND." ".escapeshellarg($po_file)." -o ".escapeshellarg($mo_file)." -i ".escapeshellarg($its_rules_file)." 2>&1";
             $msgfmt_output = shell_exec($compile_command);
 
             if (trim($msgfmt_output) != '') {
@@ -226,7 +227,7 @@ function wppo_check_for_po_changes($force = false, $coverage = array('dynamic', 
                 
             } else {
             
-                $command = WPPO_ITSTOOL_COMMAND." -m ".escapeshellarg($mo_file)." -o ".escapeshellarg($translated_xml_file)." ".escapeshellarg($original_xml_file)." 2>&1";
+                $command = WPPO_ITSTOOL_COMMAND." -m ".escapeshellarg($mo_file)." -o ".escapeshellarg($translated_xml_file)." ".escapeshellarg($original_xml_file)." -i ".escapeshellarg($its_rules_file)." 2>&1";
                 $output = shell_exec($command);
                 
                 if (trim($output) == '') {

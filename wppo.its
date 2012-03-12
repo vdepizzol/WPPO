@@ -1,0 +1,52 @@
+<its:rules
+    xmlns:its="http://www.w3.org/2005/11/its"
+    xmlns:itst="http://itstool.org/extensions/"
+    xmlns:html="http://www.w3.org/1999/xhtml"
+    its:version="1.0">
+    
+    <its:translateRule translate="no" selector="//script"/>
+    <its:translateRule translate="no" selector="//style"/>
+    
+    <itst:preserveSpaceRule preserveSpace="yes" selector="//pre"/>
+    
+    <its:translateRule translate="yes" selector="//img[@alt != '']/@alt"/>
+    <its:translateRule translate="yes" selector="//input[@placeholder != '']/@placeholder"/>
+    <its:translateRule translate="yes" selector="//textarea[@placeholder != '']/@textarea"/>
+    <its:translateRule translate="yes" selector="//table[@summary != '']/@summary"/>
+    <its:translateRule translate="yes" selector="//*[@title != '']/@title"/>
+    
+    <!--<its:withinTextRule withinText="yes" selector="//a"/>-->
+    <its:withinTextRule withinText="yes" selector="//abbr"/>
+    <its:withinTextRule withinText="yes" selector="//acronym"/>
+    <its:withinTextRule withinText="yes" selector="//b"/>
+    <its:withinTextRule withinText="yes" selector="//bdo"/>
+    <its:withinTextRule withinText="yes" selector="//big"/>
+    <its:withinTextRule withinText="yes" selector="//br"/>
+    <its:withinTextRule withinText="yes" selector="//center"/>
+    <its:withinTextRule withinText="yes" selector="//cite"/>
+    <its:withinTextRule withinText="yes" selector="//code"/>
+    <its:withinTextRule withinText="yes" selector="//del"/>
+    <its:withinTextRule withinText="yes" selector="//dfn"/>
+    <its:withinTextRule withinText="yes" selector="//em"/>
+    <its:withinTextRule withinText="yes" selector="//font"/>
+    <its:withinTextRule withinText="yes" selector="//hr"/>
+    <its:withinTextRule withinText="yes" selector="//i"/>
+    <!--<its:withinTextRule withinText="yes" selector="//img"/>-->
+    <its:withinTextRule withinText="yes" selector="//ins"/>
+    <its:withinTextRule withinText="yes" selector="//isindex"/>
+    <its:withinTextRule withinText="yes" selector="//kbd"/>
+    <its:withinTextRule withinText="yes" selector="//pre/*"/>
+    <its:withinTextRule withinText="yes" selector="//q"/>
+    <its:withinTextRule withinText="yes" selector="//s"/>
+    <its:withinTextRule withinText="yes" selector="//samp"/>
+    <its:withinTextRule withinText="yes" selector="//small"/>
+    <its:withinTextRule withinText="yes" selector="//span"/>
+    <its:withinTextRule withinText="yes" selector="//strike"/>
+    <its:withinTextRule withinText="yes" selector="//strong"/>
+    <its:withinTextRule withinText="yes" selector="//sub"/>
+    <its:withinTextRule withinText="yes" selector="//sup"/>
+    <its:withinTextRule withinText="yes" selector="//tt"/>
+    <its:withinTextRule withinText="yes" selector="//u"/>
+    <its:withinTextRule withinText="yes" selector="//var"/>
+    
+</its:rules>
