@@ -1,16 +1,19 @@
 WPPO
 ====
 
-WPPO enables WordPress-based websites to be multi-lingual by using the same infrastructure that already exists for open source projects.
+WPPO enables WordPress-based websites to go multi-lingual by using the same infrastructure that already exists in most of open-source projects.
 
 How WPPO works
 --------------
 
-WPPO is a `gettext` layer for WordPress content. It uses `xml2po` lib from `gnome-doc-utils` and `gettext` libraries to allow localizing the website content.
-    
-WPPO is not a platform to translate strings and create PO files. Instead, WPPO generates POT files of all the website content and has the ability to read the filled PO files and convert them to translated pages on the web.
+WPPO adds a translation layer to WordPress content. It uses [ITS Tool] [1], made with rules from the [W3C Internationalization Tag Set] [2], together with GNU's `gettext` library to allow localizing the website content using PO files.
 
-Creating a new language for a WordPress-based website requires translations of three parts (in parenthesis the place where PO files for each part are located):
+[1]: http://itstool.org/
+[2]: http://www.w3.org/TR/its/
+    
+WPPO is not a platform to translate strings and create PO files online. Instead, WPPO generates POT files of all the website content and has the ability to read the filled PO files and convert them to translated pages on the web.
+
+Creating a new language for a WordPress-based website requires translations of three parts (in parenthesis the place where PO files for each part is located):
 
 - The WordPress itself (`wp-content/languages`)
 - The current theme (`wp-content/themes/{$currentTheme}/languages`)
@@ -20,27 +23,38 @@ Since WordPress can manage translations of its core, themes and plugins, WPPO co
 
 WordPress is already translated into a lot of languages. WPPO tries to download dynamically the WordPress translation strings when a new language is added.
 
+Permalinks
+----------
+
+_TODO_
+
+Widget
+------
+
+_TODO_
+
 
 Requirements
 ------------
 
 - PHP 5.3 or later
 - MySQL
-- WordPress 3.0 or later
-- gnome-doc-utils
+- WordPress 3.3 or later
+- itstool
 - gettext
+- activated support for custom permalinks in WordPress (`mod_rewrite`)
 
 Install
 -------
 
-- Extract WPPO files in `wp-content/plugins/wppo` as usual.
-- Give WordPress `ABSPATH` folder writing permissions
-- Give writing permissions to `wp-content/languages`.
-- Comment the line `define('WPLANG', '');` in wp-config.php
-- Activate the plugin
+- Extract WPPO files in `wp-content/plugins/wppo` as usual;
+- Create a folder called `wppo`in `ABSPATH` with writing permissions;
+- Give writing permissions to `wp-content/languages`;
+- Comment the line `define('WPLANG', '');` in `wp-config.php`;
+- Activate the plugin.
 
-Adding new languages
---------------------
+Adding new languages to my website
+----------------------------------
 
 - Generate the POT files in the _Translations_ admin panel
 - Download the POT files from `wppo` folder, translate the strings and save as `ll.po` or `ll_CC.po`* in the `po` folder inside the directories `static` and `dynamic`
@@ -48,6 +62,11 @@ Adding new languages
 - Make sure to provide translations for the theme and WordPress instance
 - Press the _Check for language updates_ button and voilà.
 
-_Language format should follow the same pattern from GetText:_  
- - `ll`: ISO 639 two-letter language code (lowercase)  
+_Language format should follow the same pattern from GetText:_
+ - `ll`: ISO 639 two-letter language code (lowercase)
  - `CC`: ISO 3166 two-letter country code (uppercase)
+
+Keeping track of translation updates
+------------------------------------
+
+_TODO_
