@@ -62,8 +62,8 @@ Adding new languages to my website
 - Make sure to provide translations for the theme and WordPress instance
 - Press the _Check for language updates_ button and voilà.
 
-_Language format should follow the same pattern from GetText:_
- - `ll`: ISO 639 two-letter language code (lowercase)
+_* Language format should follow the same pattern from GetText:_  
+ - `ll`: ISO 639 two-letter language code (lowercase)  
  - `CC`: ISO 3166 two-letter country code (uppercase)
 
 Keeping track of translation updates
